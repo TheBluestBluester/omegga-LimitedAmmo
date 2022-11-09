@@ -146,9 +146,28 @@ class LimitedAmmo {
 		}
 		const boxfile = fs.readFileSync(__dirname + "/AmmoBoxes/"+foundbox);
 		const boxbrs = brs.read(boxfile);
+		let bricks = boxbrs.bricks;
+		for(var b in bricks) {
+			let brick = bricks[b];
+			if('components' in brick) {
+				if('BCD_Interact' in brick.components) {
+					let consoletag = brick.components.BCD_Interact.ConsoleTag.split(' ');
+					if(consoletag.length < 6) {
+						consoletag.push(password);
+					}
+					else if(consoletag[0].toLowerCase == 'limitedammo') {
+						consoletag[5] = password;
+					}
+					console.log(consoletag);
+					brick.components.BCD_Interact.ConsoleTag = consoletag.join(' ');
+				}
+			}
+			bricks[b] = brick;
+		}
+		boxbrs.bricks = bricks;
 		this.omegga.loadSaveData(boxbrs, {quiet: true, offX: pos[0], offY: pos[1], offZ: pos[2] + size[2]});
 	}
-		
+			
 	async init() {
 		ammoboxfolder = fs.readdirSync(__dirname + "/AmmoBoxes");
 		const l = await amlist.setupAmmo();
