@@ -8,3 +8,5 @@ To create an ammo dispencer you first place a brick of your chouce. Then you add
 Then you write in "Print to console" the following:
 
 ammodis (ammo box savefile name without .brs) (cooldown in seconds) (password)
+
+If done correctly the ammo box of your choice should spawn ontop of the brick.
