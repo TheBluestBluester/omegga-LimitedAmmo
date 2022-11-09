@@ -24,13 +24,13 @@ Once you finished your ammo box put it into "AmmoBoxes" folder inside the plugin
 
 You can make the plugin give or remove ammo from players using emitPlugin.
 
-setammo
+### setammo
 
 Sets player's ammo count;
 Args:
 [player name/id/etc.] [ammo type as a string] [ammo amount]
 
-changeammo
+### changeammo
 
 Changes player's ammo count;
 Args:
