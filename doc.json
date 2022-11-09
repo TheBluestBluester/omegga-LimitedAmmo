@@ -1,0 +1,65 @@
+{
+  "name": "LimitedAmmo",
+  "description": "Make people care where they shoot. Limited ammo removes guns upon running out of certain types of ammo.",
+  "author": "Bluester16",
+  "config": {
+    "UpdateDelay": {
+      "description": "How fast the plugin checks for ammo. Faster updates generate more logs. Slower updates makes the plugin less consistant.",
+      "default": 500,
+      "type": "number"
+    },
+    "Password": {
+      "description": "Prevents people from making ammo boxes and dispencers.",
+      "default": "",
+      "type": "password"
+    },
+    "AmountLostOnDeath": {
+      "description": "How much of ammo the player loses upon death. Requires death events to work. 0.0 - 1.0",
+      "default": 0.0,
+      "type": "number"
+    },
+    "TaxInfiniteWeapons": {
+	"description": "Wether or not to tax players for using weapons with infinite ammo.",
+	"default": true,
+	"type": "boolean"
+    }
+  },
+  "commands": [
+    {
+      "name": "/giveammo",
+      "description": "Gives ammo to another player.",
+      "example": "/giveammo 10 0 Bluester16",
+      "args": [
+        {
+          "name": "Amount",
+          "description": "Amount of ammo to give.",
+          "required": true
+        },
+        {
+          "name": "Type",
+          "description": "In numbers. Amount of types depends on wether or not this plugin's ammo types were modified. By default its 0 - 4.",
+          "required": true
+        },
+	{
+          "name": "Player",
+          "description": "Name of the player. Must be online. You have to type the entire player's name.",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "/listammo",
+      "description": "Lists your ammo.",
+      "example": "/listammo",
+      "args": [
+      ]
+    },
+    {
+      "name": "/wipeammo",
+      "description": "Wipes everyone's ammo. Only can be used by the host.",
+      "example": "/wipeammo",
+      "args": [
+      ]
+    }
+  ]
+}
