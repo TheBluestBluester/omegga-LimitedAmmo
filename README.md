@@ -19,3 +19,21 @@ Then you write in "Print to console" the following:
 limitedammo (ammo type as a number) (ammo amount) (should the ammo box disappear upon clicking (0 / 1)) (extention of the clear box from the bottom of the brick in x2 microbricks)
 
 Once you finished your ammo box put it into "AmmoBoxes" folder inside the plugin.
+
+## Interacting from other plugins
+
+You can make the plugin give or remove ammo from players using emitPlugin.
+
+```
+setammo
+```
+Sets player's ammo count;
+Args:
+[player name/id/etc.] [ammo type as a string] [ammo amount]
+
+```
+changeammo
+```
+Changes player's ammo count;
+Args:
+[player name/id/etc.] [ammo type as a string] [ammo amount]
