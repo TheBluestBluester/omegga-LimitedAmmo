@@ -10,6 +10,8 @@ let updatedelay;
 let loseamount;
 let totax;
 
+let boxbrslist = {};
+
 const pclr = {
 	err: '[LM] <color="ff7711">',
 	inf: '<color="ffdd00">',
@@ -138,38 +140,46 @@ class LimitedAmmo {
 		}
 	}
 	
+	async setupBoxes() {
+		for(var abf in ammoboxfolder) {
+			const box = ammoboxfolder[abf];
+			const boxfile = fs.readFileSync(__dirname + "/AmmoBoxes/"+box);
+			const boxbrs = brs.read(boxfile);
+			let bricks = boxbrs.bricks;
+			for(var b in bricks) {
+				let brick = bricks[b];
+				if('components' in brick) {
+					if('BCD_Interact' in brick.components) {
+						let consoletag = brick.components.BCD_Interact.ConsoleTag.split(' ');
+						if(consoletag.length < 6) {
+							consoletag.push(password);
+						}
+						else if(consoletag[0].toLowerCase == 'limitedammo') {
+							consoletag[5] = password;
+						}
+						brick.components.BCD_Interact.ConsoleTag = consoletag.join(' ');
+					}
+				}
+				bricks[b] = brick;
+			}
+			boxbrs.bricks = bricks;
+			const boxsubstr = box.substr(0, box.length - 4);
+			boxbrslist[boxsubstr] = boxbrs;
+		}
+	}
+	
 	async createBox(playername, boxname, pos, size) {
-		const foundbox = ammoboxfolder.find(x => x.includes(boxname));
+		const foundbox = boxbrslist[boxname];
 		if(foundbox == null) {
 			this.omegga.whisper(playername, pclr.err + 'Ammo box ' + boxname + ' doesn\'t exist.</>');
 			return;
 		}
-		const boxfile = fs.readFileSync(__dirname + "/AmmoBoxes/"+foundbox);
-		const boxbrs = brs.read(boxfile);
-		let bricks = boxbrs.bricks;
-		for(var b in bricks) {
-			let brick = bricks[b];
-			if('components' in brick) {
-				if('BCD_Interact' in brick.components) {
-					let consoletag = brick.components.BCD_Interact.ConsoleTag.split(' ');
-					if(consoletag.length < 6) {
-						consoletag.push(password);
-					}
-					else if(consoletag[0].toLowerCase == 'limitedammo') {
-						consoletag[5] = password;
-					}
-					console.log(consoletag);
-					brick.components.BCD_Interact.ConsoleTag = consoletag.join(' ');
-				}
-			}
-			bricks[b] = brick;
-		}
-		boxbrs.bricks = bricks;
-		this.omegga.loadSaveData(boxbrs, {quiet: true, offX: pos[0], offY: pos[1], offZ: pos[2] + size[2]});
+		this.omegga.loadSaveData(foundbox, {quiet: true, offX: pos[0], offY: pos[1], offZ: pos[2] + size[2]});
 	}
 			
 	async init() {
 		ammoboxfolder = fs.readdirSync(__dirname + "/AmmoBoxes");
+		this.setupBoxes();
 		const l = await amlist.setupAmmo();
 		ammotypes = l[0];
 		gunammotypes = l[1]
