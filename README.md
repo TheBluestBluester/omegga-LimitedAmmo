@@ -3,7 +3,7 @@ Make people care where they shoot.
 This plugin gives players limited ammounts of ammo, ammo boxes and ammo dispencers.
 
 ## Creating ammo dispencers.
-To create an ammo dispencer you first place a brick of your chouce. Then you add an interact component.
+To create an ammo dispencer you first place a brick of your choice. Then you add an interact component.
 
 Then you write in "Print to console" the following:
 
