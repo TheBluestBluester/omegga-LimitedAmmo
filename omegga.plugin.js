@@ -151,11 +151,11 @@ class LimitedAmmo {
 				if('components' in brick) {
 					if('BCD_Interact' in brick.components) {
 						let consoletag = brick.components.BCD_Interact.ConsoleTag.split(' ');
-						if(consoletag.length < 6) {
+						if(consoletag.length < 5) {
 							consoletag.push(password);
 						}
 						else if(consoletag[0].toLowerCase == 'limitedammo') {
-							consoletag[5] = password;
+							consoletag[4] = password;
 						}
 						brick.components.BCD_Interact.ConsoleTag = consoletag.join(' ');
 					}
@@ -170,11 +170,12 @@ class LimitedAmmo {
 	
 	async createBox(playername, boxname, pos, size) {
 		function random(min, max) {
-			return Math.floor(Math.random() * (max - min)) + min;
+			return Math.round(Math.random() * (max - min)) + min;
 		}
 		const sb = boxname.split('-');
 		let foundbox;
-		if(sb[0].toLowerCase() === 'random') {
+		switch(sb[0].toLowerCase()) {
+			case 'random':
 			const minrange = Number(sb[1]);
 			const maxrange = Number(sb[2]);
 			if(isNaN(minrange) || isNaN(maxrange)) {
@@ -187,15 +188,35 @@ class LimitedAmmo {
 				return;
 			}
 			foundbox = values[random(minrange, maxrange)];
-		}
-		else {
+			break;
+			
+			case 'give':
+			const ammotype = ammotypes.find(at => at.toLowerCase().includes(sb[1].toLowerCase()));
+			const count = Number(sb[2]);
+			if(ammotype == null) {
+				this.omegga.whisper(playername, pclr.err + 'Invalid ammo type.</>');
+				return;
+			}
+			if(isNaN(count)) {
+				this.omegga.whisper(playername, pclr.err + 'Ammo amount must be a number.</>');
+				return;
+			}
+			const pl = await this.omegga.getPlayer(playername);
+			let inv = await this.store.get(pl.id);
+			inv[ammotypes.indexOf(ammotype)] += count;
+			this.omegga.middlePrint(playername, '+' + count + ' ' + ammotype);
+			this.store.set(pl.id, inv);
+			break;
+			
+			default:
 			foundbox = boxbrslist[boxname];
+			if(foundbox == null) {
+				this.omegga.whisper(playername, pclr.err + 'Ammo box ' + boxname + ' doesn\'t exist.</>');
+				return;
+			}
+			this.omegga.loadSaveData(foundbox, {quiet: true, offX: pos[0], offY: pos[1], offZ: pos[2] + size[2]});
+			break;
 		}
-		if(foundbox == null) {
-			this.omegga.whisper(playername, pclr.err + 'Ammo box ' + boxname + ' doesn\'t exist.</>');
-			return;
-		}
-		this.omegga.loadSaveData(foundbox, {quiet: true, offX: pos[0], offY: pos[1], offZ: pos[2] + size[2]});
 	}
 			
 	async init() {
@@ -224,22 +245,20 @@ class LimitedAmmo {
 		this.omegga.on('interact', async data => {
 			const d = data.message.split(' ');
 			if(d[0].toLowerCase() === 'limitedammo') {
-				if(password.length > 0 && d[5] !== password) {
+				if(password.length > 0 && d[4] !== password) {
 					return;
 				}
 				let inv = await this.store.get(data.player.id);
 				inv[d[1]] += Number(d[2]);
 				this.omegga.middlePrint(data.player.name, '+' + d[2] + ' ' + ammotypes[d[1]]);
 				this.store.set(data.player.id, inv);
-				if(d[3] === '1') {
-					let size = data.brick_size;
-					let pos = data.position;
-					if(!isNaN(Number(d[4]))) {
-						size[2] += Number(d[4])
-						pos[2] -= Number(d[4])
-					}
-					this.omegga.clearRegion({center: pos, extent: size});
+				let size = data.brick_size;
+				let pos = data.position;
+				if(!isNaN(Number(d[3]))) {
+					size[2] += Number(d[3])
+					pos[2] -= Number(d[3])
 				}
+				this.omegga.clearRegion({center: pos, extent: size});
 			}
 			if(d[0].toLowerCase() === 'ammodis') {
 				if(password.length > 0 && d[3] !== password) {
@@ -352,7 +371,6 @@ class LimitedAmmo {
 			this.omegga.whisper(player.name, pclr.msg + 'You have lost some ammo!</>');
 		}
 		if(ev === 'setammo' || event === 'changeammo') {
-			console.log(args);
 			const pla = args[0];
 			const slot = ammotypes.indexOf(args[1]);
 			const amount = Number(args[2]);
@@ -380,38 +398,6 @@ class LimitedAmmo {
 			}
 			this.store.set(player.id, inv);
 		}
-		/*
-		if(ev === 'getammo') {
-			const pla = args[0];
-			const slot = ammotypes.indexOf(args[1]);
-			if(slot === -1 || slot == null) {
-				return;
-			}
-			const player = await this.omegga.getPlayer(pla);
-			if(player == null) {
-				return;
-			}
-			const source = await this.omegga.getPlugin(from);
-			const inv = await this.store.get(player.id);
-			if(inv == null) {
-				return;
-			}
-			source.emitPlugin('playerammo', player, inv[slot]);
-		}
-		if(ev === 'getweapon') {
-			const pla = args[0];
-			const player = await this.omegga.getPlayer(pla);
-			if(player == null) {
-				return;
-			}
-			const source = await this.omegga.getPlugin(from);
-			const stats = playerammo.find(p => p.player === player.id);
-			if(stats == null) {
-				return;
-			}
-			source.emitPlugin('playerammo', player, stats.selected);
-		}
-		*/
 	}
 	
 	async stop() {
