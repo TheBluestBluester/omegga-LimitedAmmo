@@ -17,8 +17,6 @@ random-(min range)-(max range)
 
 give-(ammo type)-(amount)
 
-If done correctly the ammo box of your choice should spawn ontop of the brick.
-
 ## Creating custom ammo boxes.
 To make the ammo box functional add a brick ON TOP of the ammo box and add an interact component.
 
