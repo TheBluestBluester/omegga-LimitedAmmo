@@ -9,6 +9,10 @@ Then you write in "Print to console" the following:
 
 ammodis (ammo box savefile name without .brs) (cooldown in seconds) (password)
 
+This also supports random ammo! To have the dispencer generate random ammo instead of the brs file write:
+
+random-(min range)-(max range)
+
 If done correctly the ammo box of your choice should spawn ontop of the brick.
 
 ## Creating custom ammo boxes.
