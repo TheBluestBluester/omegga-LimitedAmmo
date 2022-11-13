@@ -13,6 +13,10 @@ This also supports random ammo! To have the dispencer generate random ammo inste
 
 random-(min range)-(max range)
 
+...or skip the ammo box entirely by writing:
+
+give-(ammo type)-(amount)
+
 If done correctly the ammo box of your choice should spawn ontop of the brick.
 
 ## Creating custom ammo boxes.
