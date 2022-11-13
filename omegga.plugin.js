@@ -169,7 +169,28 @@ class LimitedAmmo {
 	}
 	
 	async createBox(playername, boxname, pos, size) {
-		const foundbox = boxbrslist[boxname];
+		function random(min, max) {
+			return Math.floor(Math.random() * (max - min)) + min;
+		}
+		const sb = boxname.split('-');
+		let foundbox;
+		if(sb[0].toLowerCase() === 'random') {
+			const minrange = Number(sb[1]);
+			const maxrange = Number(sb[2]);
+			if(isNaN(minrange) || isNaN(maxrange)) {
+				this.omegga.whisper(playername, pclr.err + 'Min range and max range must be both numbers.</>');
+				return;
+			}
+			const values = Object.values(boxbrslist);
+			if(minrange < 0 || minrange > maxrange || maxrange > values.length - 1) {
+				this.omegga.whisper(playername, pclr.err + 'This dispencer may have incorrect values setup.</>');
+				return;
+			}
+			foundbox = values[random(minrange, maxrange)];
+		}
+		else {
+			foundbox = boxbrslist[boxname];
+		}
 		if(foundbox == null) {
 			this.omegga.whisper(playername, pclr.err + 'Ammo box ' + boxname + ' doesn\'t exist.</>');
 			return;
