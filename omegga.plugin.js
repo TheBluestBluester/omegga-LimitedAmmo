@@ -28,6 +28,8 @@ const infiniteguns = [
 
 let dispencercooldown = [];
 
+let dead = [];
+
 let ammoboxfolder;
 
 let ammotypes;
@@ -113,7 +115,7 @@ class LimitedAmmo {
 			let inv = await this.store.get(player.id);
 			const ammot = gunammotypes[weapon.weapon.toLowerCase()];
 			const infinite = infiniteguns.includes(weapon.weapon.toLowerCase()) && totax;
-			if(inv[ammot] <= 0 && !infinite) {
+			if(inv[ammot] <= 0 && !infinite && !dead.includes(player.name)) {
 				this.omegga.whisper(player.name, pclr.msg + 'You ran out of ' + ammotypes[ammot] + '.</>');
 				player.takeItem('Weapon_' + weapon.weapon.toLowerCase());
 				continue;
@@ -369,6 +371,14 @@ class LimitedAmmo {
 			}
 			this.store.set(player.id, inv);
 			this.omegga.whisper(player.name, pclr.msg + 'You have lost some ammo!</>');
+			dead.push(player.name);
+		}
+		if(ev === 'spawn' && loseamount > 0 && loseamount <= 1) {
+			if(args[0] == null) {
+				return;
+			}
+			const player = args[0].player;
+			dead.splice(dead.indexOf(player.name),1);
 		}
 		if(ev === 'setammo' || event === 'changeammo') {
 			const pla = args[0];
