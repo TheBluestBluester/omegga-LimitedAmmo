@@ -184,12 +184,19 @@ class LimitedAmmo {
 				this.omegga.whisper(playername, pclr.err + 'Min range and max range must be both numbers.</>');
 				return;
 			}
-			const values = Object.values(boxbrslist);
+			const values = Object.keys(boxbrslist);
 			if(minrange < 0 || minrange > maxrange || maxrange > values.length - 1) {
 				this.omegga.whisper(playername, pclr.err + 'This dispencer may have incorrect values setup.</>');
 				return;
 			}
-			foundbox = values[random(minrange, maxrange)];
+			boxname = values[random(minrange, maxrange)];
+			default:
+			foundbox = boxbrslist[boxname];
+			if(foundbox == null) {
+				this.omegga.whisper(playername, pclr.err + 'Ammo box ' + boxname + ' doesn\'t exist.</>');
+				return;
+			}
+			this.omegga.loadSaveData(foundbox, {quiet: true, offX: pos[0], offY: pos[1], offZ: pos[2] + size[2]});
 			break;
 			
 			case 'give':
@@ -208,15 +215,6 @@ class LimitedAmmo {
 			inv[ammotypes.indexOf(ammotype)] += count;
 			this.omegga.middlePrint(playername, '+' + count + ' ' + ammotype);
 			this.store.set(pl.id, inv);
-			break;
-			
-			default:
-			foundbox = boxbrslist[boxname];
-			if(foundbox == null) {
-				this.omegga.whisper(playername, pclr.err + 'Ammo box ' + boxname + ' doesn\'t exist.</>');
-				return;
-			}
-			this.omegga.loadSaveData(foundbox, {quiet: true, offX: pos[0], offY: pos[1], offZ: pos[2] + size[2]});
 			break;
 		}
 	}
