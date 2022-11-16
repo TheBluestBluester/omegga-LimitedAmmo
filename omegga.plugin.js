@@ -273,7 +273,7 @@ class LimitedAmmo {
 				}
 				this.createBox(data.player.name, d[1], data.position, data.brick_size);
 				dispencercooldown.push(data.position.join(' '));
-				setTimeout(() => dispencercooldown.splice(dispencercooldown.indexOf(data.position.join(' ')),1), Number(d[2]));
+				setTimeout(() => dispencercooldown.splice(dispencercooldown.indexOf(data.position.join(' ')),1), Number(d[2]) * 1000);
 			}
 		})
 		.on('cmd:giveammo', async (name, ...args) => {
