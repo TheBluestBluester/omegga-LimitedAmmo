@@ -22,6 +22,11 @@
 	"description": "Wether or not to tax players for using weapons with infinite ammo.",
 	"default": true,
 	"type": "boolean"
+    },
+    "ReturnWeapon": {
+	"description": "Wether or not to return the removed weapon.",
+	"default": true,
+	"type": "boolean"
     }
   },
   "commands": [
