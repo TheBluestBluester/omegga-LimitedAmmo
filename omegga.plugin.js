@@ -305,7 +305,6 @@ class LimitedAmmo {
 				this.omegga.whisper(name, pclr.err + 'You cannot give yourself ammo.</>');
 				return;
 			}
-			console.log(plr);
 			const reciever = await this.omegga.getPlayer(plr);
 			if(reciever == null) {
 				this.omegga.whisper(name, pclr.err + 'Could not find the reciever.</>');
