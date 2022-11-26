@@ -10,6 +10,7 @@ let updatedelay;
 let loseamount;
 let totax;
 let toreturn;
+let towipeleave;
 
 let boxbrslist = {};
 
@@ -51,6 +52,7 @@ class LimitedAmmo {
 		loseamount = this.config.AmountLostOnDeath;
 		totax = this.config.TaxInfiniteWeapons;
 		toreturn = this.config.ReturnWeapon;
+		towipeleave = this.config.WipeOnLeave;
 	}
 	
 	async getHeldWeapon(pawn) {
@@ -94,22 +96,22 @@ class LimitedAmmo {
 			const player = players[pi];
 			const ppawn = await player.getPawn();
 			const weapon = await this.getHeldWeapon(ppawn);
-			if(weapon.weapon == "None" || notguns.includes(weapon.weapon)) {
-				if(toreturn) {
-					const weprem = removed.filter(x => x.pl === player.name);
-					for(var wr in weprem) {
-						const wep = weprem[wr].wep;
-						removed.splice(removed.indexOf(wep), 1);
-						player.giveItem(wep);
-					}
+			let pa = playerammo.find(a => a.player = player.id);
+			if(pa != null && !weapon.weapon.includes(pa.selected) && toreturn) {
+				const weprem = removed.filter(x => x.pl === player.name);
+				for(var wr in weprem) {
+					const wep = weprem[wr].wep;
+					removed.splice(removed.indexOf(wep), 1);
+					player.giveItem(wep);
 				}
+			}
+			if(weapon.weapon == "None" || notguns.includes(weapon.weapon)) {
 				continue;
 			}
 			if(weapon.id == null || weapon.weapon == null) {
 				continue;
 			}
 			let ammo = await this.getWeaponAmmo(weapon.weapon, weapon.id);;
-			let pa = playerammo.find(a => a.player = player.id);
 			if(pa == null) {
 				playerammo.push({player: player.id, ammo: ammo, selected: weapon.weapon});
 				continue;
@@ -356,6 +358,15 @@ class LimitedAmmo {
 				inv[i] = 0;
 			}
 			if(!keys.includes(player.id)) {
+				this.store.set(player.id, inv);
+			}
+		})
+		.on('leave', async player => {
+			if(towipeleave) {
+				let inv = await this.store.get(player.id);
+				for(var i in inv) {
+					inv[i] = 0;
+				}
 				this.store.set(player.id, inv);
 			}
 		});

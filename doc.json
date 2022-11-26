@@ -24,8 +24,13 @@
 	"type": "boolean"
     },
     "ReturnWeapon": {
-	"description": "Wether or not to return the removed weapon.",
+	"description": "Returns the removed weapon.",
 	"default": true,
+	"type": "boolean"
+    },
+    "WipeOnLeave": {
+	"description": "Wipe the player's ammo when they leave.",
+	"default": false,
 	"type": "boolean"
     }
   },
