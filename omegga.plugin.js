@@ -264,7 +264,8 @@ class LimitedAmmo {
 					return;
 				}
 				let inv = playerammolist[data.player.id];
-				inv[d[1]] += Number(d[2]);
+				const slot = Number(d[1]);
+				inv[slot] += Number(d[2]);
 				this.omegga.middlePrint(data.player.name, '+' + d[2] + ' ' + ammotypes[d[1]]);
 				playerammolist[data.player.id] = inv;
 				let size = data.brick_size;
@@ -366,7 +367,7 @@ class LimitedAmmo {
 			else {
 				inv = await this.store.get(player.id);
 			}
-			playerammo[player.id] = inv;
+			playerammolist[player.id] = inv;
 		})
 		.on('leave', async player => {
 			let inv = playerammolist[player.id];
