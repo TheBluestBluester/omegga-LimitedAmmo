@@ -15,6 +15,7 @@ let towipeleave;
 let boxbrslist = {};
 
 let removed = [];
+let playerammolist = {};
 
 const pclr = {
 	err: '[LM] <color="ff7711">',
@@ -25,7 +26,6 @@ const pclr = {
 const notguns = [
 	'BrickTool', 'Hammer', 'PaintTool', 'SelectionTool', 'Guide', 'ResizeTool', 'Applicator', 'ImpactGrenade', 'StickGrenade', 'ImpulseGrenade', 'HealthPotion'
 ]
-
 const infiniteguns = [
 	'twincannon', 'bazooka', 'minigun'
 ]
@@ -123,11 +123,11 @@ class LimitedAmmo {
 				playerammo[index] = pa;
 				continue;
 			}
-			const keys = await this.store.keys();
+			const keys = Object.keys(playerammolist);
 			if(!keys.includes(player.id)) {
 				continue;
 			}
-			let inv = await this.store.get(player.id);
+			let inv = playerammolist[player.id];
 			const ammot = gunammotypes[weapon.weapon.toLowerCase()];
 			const infinite = infiniteguns.includes(weapon.weapon.toLowerCase()) && totax;
 			if(inv[ammot] <= 0 && !infinite && !dead.includes(player.name)) {
@@ -148,7 +148,8 @@ class LimitedAmmo {
 				if(inv[ammot] < 0) {
 					inv[ammot] = 0;
 				}
-				this.store.set(player.id, inv);
+				//this.store.set(player.id, inv);
+				playerammolist[player.id] = inv;
 				this.omegga.middlePrint(player.name, inv[ammot]);
 				if(inv[ammot] <= 0) {
 					this.omegga.whisper(player.name, pclr.msg + 'You ran out of ' + ammotypes[ammot] + '.</>');
@@ -230,10 +231,10 @@ class LimitedAmmo {
 				return;
 			}
 			const pl = await this.omegga.getPlayer(playername);
-			let inv = await this.store.get(pl.id);
+			let inv = playerammolist[pl.id];
 			inv[ammotypes.indexOf(ammotype)] += count;
 			this.omegga.middlePrint(playername, '+' + count + ' ' + ammotype);
-			this.store.set(pl.id, inv);
+			playerammolist[pl.id] = inv;
 			break;
 		}
 	}		
@@ -265,7 +266,7 @@ class LimitedAmmo {
 				let inv = await this.store.get(data.player.id);
 				inv[d[1]] += Number(d[2]);
 				this.omegga.middlePrint(data.player.name, '+' + d[2] + ' ' + ammotypes[d[1]]);
-				this.store.set(data.player.id, inv);
+				playerammolist[data.player.id] = inv;
 				let size = data.brick_size;
 				let pos = data.position;
 				if(!isNaN(Number(d[3]))) {
@@ -331,12 +332,12 @@ class LimitedAmmo {
 			rinv[slot] += amount;
 			this.omegga.middlePrint(name, '-' + amount + ' ' + ammotypes[slot] + ' to ' + plr);
 			this.omegga.middlePrint(plr, '+' + amount + ' ' + ammotypes[slot] + ' from ' + name);
-			this.store.set(sender.id, sinv);
-			this.store.set(reciever.id, rinv);
+			playerammolist[sender.id] = sinv;
+			playerammolist[reciever.id] = rinv;
 		})
 		.on('cmd:listammo', async name => {
 			const player = this.omegga.getPlayer(name);
-			const inv = await this.store.get(player.id);
+			const inv = playerammolist[player.id];
 			for(var i in inv) {
 				const ammot = ammotypes[i];
 				const amount = inv[i];
@@ -356,23 +357,35 @@ class LimitedAmmo {
 		.on('join', async player => {
 			const keys = await this.store.keys();
 			let inv = [];
-			for(var i in ammotypes) {
-				inv[i] = 0;
-			}
 			if(!keys.includes(player.id)) {
+				for(var i in ammotypes) {
+					inv[i] = 0;
+				}
 				this.store.set(player.id, inv);
 			}
+			else {
+				inv = await this.store.get(player.id);
+			}
+			playerammo[player.id] = inv;
 		})
 		.on('leave', async player => {
+			let inv = playerammolist[player.id];
 			if(towipeleave) {
 				let inv = await this.store.get(player.id);
 				for(var i in inv) {
 					inv[i] = 0;
 				}
-				this.store.set(player.id, inv);
 			}
+			this.store.set(player.id, inv);
+			delete playerammolist[player.id];
 		});
 		interval = setInterval(() => this.tick(), 500);
+		const players =  this.omegga.players;
+		for(var pi in players) {
+			const player = players[pi];
+			let inv = await this.store.get(player.id);
+			playerammolist[player.id] = inv;
+		}
 		return { registeredCommands: ['giveammo', 'reset', 'listammo'] };
 	}
 	
@@ -437,6 +450,21 @@ class LimitedAmmo {
 			deathevents.emitPlugin('unsubscribe');
 		}
 		clearInterval(interval);
+		const players = this.omegga.players;
+		for(var pi in players) {
+			const player = players[pi];
+			let inv = [];
+			if(towipeleave) {
+				for(var i in ammotypes) {
+					inv[i] = 0;
+				}
+			}
+			else {
+				inv = playerammolist[player.id];
+				console.log(inv);
+			}
+			this.store.set(player.id, inv);
+		}
 	}
 }
 module.exports = LimitedAmmo;
