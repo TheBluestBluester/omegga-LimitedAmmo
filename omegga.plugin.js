@@ -263,7 +263,7 @@ class LimitedAmmo {
 				if(password.length > 0 && d[4] !== password) {
 					return;
 				}
-				let inv = await this.store.get(data.player.id);
+				let inv = playerammolist[data.player.id];
 				inv[d[1]] += Number(d[2]);
 				this.omegga.middlePrint(data.player.name, '+' + d[2] + ' ' + ammotypes[d[1]]);
 				playerammolist[data.player.id] = inv;
