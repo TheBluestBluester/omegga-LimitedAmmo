@@ -461,7 +461,6 @@ class LimitedAmmo {
 			}
 			else {
 				inv = playerammolist[player.id];
-				console.log(inv);
 			}
 			this.store.set(player.id, inv);
 		}
