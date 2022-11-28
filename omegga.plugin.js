@@ -66,7 +66,7 @@ class LimitedAmmo {
 			),
 			first: 'index',
 			timeoutDelay: 500
-		});
+		}).catch();
 		return {weapon: Weapon, id: ID};
 	}
 	
@@ -82,7 +82,7 @@ class LimitedAmmo {
 			),
 			first: 'index',
 			timeoutDelay: 500
-		});
+		}).catch();
 		return Number(Ammo);
 	}
 	
@@ -94,24 +94,24 @@ class LimitedAmmo {
 		const players = this.omegga.players;
 		for(var pi in players) {
 			const player = players[pi];
-			const ppawn = await player.getPawn();
+			const ppawn = await player.getPawn().catch();
 			const weapon = await this.getHeldWeapon(ppawn);
-			let pa = playerammo.find(a => a.player = player.id);
-			if(pa != null && !weapon.weapon.includes(pa.selected) && toreturn) {
-				const weprem = removed.filter(x => x.pl === player.name);
-				for(var wr in weprem) {
-					const wep = weprem[wr].wep;
-					removed.splice(removed.indexOf(wep), 1);
-					player.giveItem(wep);
-				}
-			}
 			if(weapon.weapon == "None" || notguns.includes(weapon.weapon)) {
+				if(toreturn) {
+					const weprem = removed.filter(x => x.pl === player.name);
+					for(var wr in weprem) {
+						const wep = weprem[wr].wep;
+						removed.splice(removed.indexOf(wep), 1);
+						player.giveItem(wep);
+					}
+				}
 				continue;
 			}
 			if(weapon.id == null || weapon.weapon == null) {
 				continue;
 			}
-			let ammo = await this.getWeaponAmmo(weapon.weapon, weapon.id);;
+			let ammo = await this.getWeaponAmmo(weapon.weapon, weapon.id);
+			let pa = playerammo.find(a => a.player = player.id);
 			if(pa == null) {
 				playerammo.push({player: player.id, ammo: ammo, selected: weapon.weapon});
 				continue;
@@ -134,7 +134,9 @@ class LimitedAmmo {
 				this.omegga.whisper(player.name, pclr.msg + 'You ran out of ' + ammotypes[ammot] + '.</>');
 				const wep = 'Weapon_' + weapon.weapon.toLowerCase();
 				player.takeItem(wep);
-				removed.push({pl: player.name, wep: wep});
+				if(toreturn) {
+					removed.push({pl: player.name, wep: wep});
+				}
 				continue;
 			}
 			if(pa.ammo > ammo || infinite) {
