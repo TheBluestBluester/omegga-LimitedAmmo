@@ -111,16 +111,15 @@ class LimitedAmmo {
 				continue;
 			}
 			let ammo = await this.getWeaponAmmo(weapon.weapon, weapon.id);
-			let pa = playerammo.find(a => a.player = player.id);
+			let pa = playerammo[player.id];
 			if(pa == null) {
-				playerammo.push({player: player.id, ammo: ammo, selected: weapon.weapon});
+				playerammo[player.id] = {ammo: ammo, selected: weapon.weapon};
 				continue;
 			}
-			const index = playerammo.indexOf(pa);
 			if(pa.selected != weapon.weapon) {
 				pa.selected = weapon.weapon;
 				pa.ammo = ammo;
-				playerammo[index] = pa;
+				playerammo[player.id] = pa;
 				continue;
 			}
 			const keys = Object.keys(playerammolist);
@@ -158,7 +157,7 @@ class LimitedAmmo {
 				}
 			}
 			pa.ammo = ammo;
-			playerammo[index] = pa;
+			playerammo[player.id] = pa;
 		}
 	}
 	
@@ -397,13 +396,13 @@ class LimitedAmmo {
 				return;
 			}
 			const player = args[0].player;
-			let inv = await this.store.get(player.id);
+			let inv = playerammolist[player.id];
 			for(var i in inv) {
 				let ammo = inv[i];
 				ammo = Math.floor(ammo * (1 - loseamount));
 				inv[i] = ammo;
 			}
-			this.store.set(player.id, inv);
+			playerammolist[player.id] = inv;
 			this.omegga.whisper(player.name, pclr.msg + 'You have lost some ammo!</>');
 			dead.push(player.name);
 		}
@@ -425,7 +424,7 @@ class LimitedAmmo {
 			if(player == null) {
 				return;
 			}
-			let inv = await this.store.get(player.id);
+			let inv = playerammolist[player.id];
 			switch(ev) {
 				case 'setammo':
 					inv[slot] = amount;
@@ -440,7 +439,7 @@ class LimitedAmmo {
 					this.omegga.middlePrint(player.name, sign + amount + ' ' + ammotypes[slot]);
 					break;
 			}
-			this.store.set(player.id, inv);
+			playerammolist[player.id] = inv;
 		}
 	}
 	
