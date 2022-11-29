@@ -87,9 +87,7 @@ class LimitedAmmo {
 	}
 	
 	async tick() {
-		if(!enabled) {
-			return;
-		}
+		try {
 		
 		const players = this.omegga.players;
 		for(var pi in players) {
@@ -158,6 +156,11 @@ class LimitedAmmo {
 			}
 			pa.ammo = ammo;
 			playerammo[player.id] = pa;
+		}
+		
+		}
+		catch(e) {
+			console.log(e);
 		}
 	}
 	
