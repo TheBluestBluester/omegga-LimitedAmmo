@@ -371,7 +371,6 @@ class LimitedAmmo {
 		.on('leave', async player => {
 			let inv = playerammolist[player.id];
 			if(towipeleave) {
-				let inv = await this.store.get(player.id);
 				for(var i in inv) {
 					inv[i] = 0;
 				}
