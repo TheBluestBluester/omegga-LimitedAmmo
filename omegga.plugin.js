@@ -211,7 +211,8 @@ class LimitedAmmo {
 				this.omegga.whisper(playername, pclr.err + 'This dispencer may have incorrect values setup.</>');
 				return;
 			}
-			boxname = values[random(minrange, maxrange)];
+			const minmax = maxrange - minrange;
+			boxname = values[Math.abs(random(-maxrange, maxrange)) + minrange];
 			default:
 			foundbox = boxbrslist[boxname];
 			if(foundbox == null) {
