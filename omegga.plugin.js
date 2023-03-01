@@ -340,7 +340,7 @@ class LimitedAmmo {
 			playerammolist[reciever.id] = rinv;
 		})
 		.on('cmd:listammo', async name => {
-			const player = this.omegga.getPlayer(name);
+			const player = await this.omegga.getPlayer(name);
 			const inv = playerammolist[player.id];
 			for(var i in inv) {
 				const ammot = ammotypes[i];
@@ -351,7 +351,15 @@ class LimitedAmmo {
 		.on('cmd:wipeammo', async name => {
 			const player = await this.omegga.getPlayer(name);
 			if(await player.isHost()) {
-				this.store.wipe();
+				const keys = await this.store.keys();
+				let inv = [];
+				for(var i in ammotypes) {
+					inv[i] = 0;
+				}
+				for(var k in keys) {
+					const key = keys[k];
+					this.store.set(key, inv);
+				}
 				this.omegga.whisper(name, pclr.msg + 'Wiped succesfully.</>');
 			}
 			else {
@@ -389,7 +397,7 @@ class LimitedAmmo {
 			let inv = await this.store.get(player.id);
 			playerammolist[player.id] = inv;
 		}
-		return { registeredCommands: ['giveammo', 'reset', 'listammo'] };
+		return { registeredCommands: ['giveammo', 'reset', 'listammo', 'wipeammo'] };
 	}
 	
 	async pluginEvent(event, from, ...args) {
