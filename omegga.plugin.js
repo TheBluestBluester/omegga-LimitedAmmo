@@ -390,7 +390,7 @@ class LimitedAmmo {
 			this.store.set(player.id, inv);
 			delete playerammolist[player.id];
 		});
-		interval = setInterval(() => this.tick(), 500);
+		interval = setInterval(() => this.tick(), updatedelay);
 		const players =  this.omegga.players;
 		for(var pi in players) {
 			const player = players[pi];
