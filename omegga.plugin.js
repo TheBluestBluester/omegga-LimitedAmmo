@@ -48,7 +48,7 @@ class LimitedAmmo {
 		this.config = config;
 		this.store = store
 		password = this.config.Password;
-		updatedelay = this.config.updateDelay;
+		updatedelay = this.config.UpdateDelay;
 		loseamount = this.config.AmountLostOnDeath;
 		totax = this.config.TaxInfiniteWeapons;
 		toreturn = this.config.ReturnWeapon;
@@ -390,7 +390,7 @@ class LimitedAmmo {
 			this.store.set(player.id, inv);
 			delete playerammolist[player.id];
 		});
-		interval = setInterval(() => this.tick(), 500);
+		interval = setInterval(() => this.tick(), updatedelay);
 		const players =  this.omegga.players;
 		for(var pi in players) {
 			const player = players[pi];
