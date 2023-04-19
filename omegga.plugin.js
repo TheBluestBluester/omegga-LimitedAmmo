@@ -11,6 +11,7 @@ let loseamount;
 let totax;
 let toreturn;
 let towipeleave;
+let authorized;
 
 let boxbrslist = {};
 
@@ -53,6 +54,7 @@ class LimitedAmmo {
 		totax = this.config.TaxInfiniteWeapons;
 		toreturn = this.config.ReturnWeapon;
 		towipeleave = this.config.WipeOnLeave;
+		authorized = this.config.Authorized;
 	}
 	
 	async getHeldWeapon(pawn) {
@@ -212,7 +214,7 @@ class LimitedAmmo {
 				return;
 			}
 			const minmax = maxrange - minrange;
-			boxname = values[Math.abs(random(-maxrange, maxrange)) + minrange];
+			boxname = values[Math.abs(random(-minmax, minmax)) + minrange];
 			default:
 			foundbox = boxbrslist[boxname];
 			if(foundbox == null) {
@@ -242,7 +244,6 @@ class LimitedAmmo {
 		}
 	}		
 	async init() {
-		
 		ammoboxfolder = fs.readdirSync(__dirname + "/AmmoBoxes");
 		this.setupBoxes();
 		const l = await amlist.setupAmmo();
@@ -287,6 +288,16 @@ class LimitedAmmo {
 				if(timeout.length > 0) {
 					this.omegga.middlePrint(data.player.name, 'This ammo dispencer is on cooldown!');
 					return;
+				}
+				if(authorized.length > 0) {
+					const brs = await this.omegga.getSaveData({center: data.position, extent: data.brick_size});
+					const brick = brs.bricks[0];
+					const owner = brs.brick_owners[brick.owner_index - 1];
+					const filter = authorized.filter(p => p.id === owner.id);
+					if(filter.length === 0) {
+						this.omegga.whisper(playername, pclr.err + 'This person is not authorized to make ammo dispencers.</>');
+						return;
+					}
 				}
 				this.createBox(data.player.name, d[1], data.position, data.brick_size);
 				dispencercooldown.push(data.position.join(' '));

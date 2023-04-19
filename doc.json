@@ -5,13 +5,18 @@
   "config": {
     "UpdateDelay": {
       "description": "How fast the plugin checks for ammo. Faster updates generate more logs. Slower updates makes the plugin less consistant.",
-      "default": 500,
+      "default": 300,
       "type": "number"
     },
     "Password": {
       "description": "Prevents people from making ammo boxes and dispencers.",
       "default": "",
       "type": "password"
+    },
+    "Authorized": {
+      "description": "List of authorized players that can make ammo boxes and dispencers.",
+      "default": [],
+      "type": "players"
     },
     "AmountLostOnDeath": {
       "description": "How much of ammo the player loses upon death. Requires death events to work. 0.0 - 1.0",
