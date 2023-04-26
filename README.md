@@ -34,10 +34,10 @@ You can make the plugin give or remove ammo from players using emitPlugin.
 
 Sets player's ammo count;
 Args:
-[player name/id/etc.] [ammo type as a string] [ammo amount]
+[player name/id/etc.] [ammo type as a number] [ammo amount]
 
 ### changeammo
 
 Changes player's ammo count;
 Args:
-[player name/id/etc.] [ammo type as a string] [ammo amount]
+[player name/id/etc.] [ammo type as a number] [ammo amount]
