@@ -435,11 +435,11 @@ class LimitedAmmo {
 			const player = args[0].player;
 			dead.splice(dead.indexOf(player.name),1);
 		}
-		if(ev === 'setammo' || event === 'changeammo') {
+		if(ev === 'setammo' || ev === 'changeammo') {
 			const pla = args[0];
-			const slot = ammotypes.indexOf(args[1]);
+			const slot = Number(args[1]);
 			const amount = Number(args[2]);
-			if(slot === -1 || slot == null || isNaN(amount) || amount == null) {
+			if(isNaN(slot) || slot == null || isNaN(amount) || amount == null) {
 				return;
 			}
 			const player = await this.omegga.getPlayer(pla);
@@ -462,6 +462,21 @@ class LimitedAmmo {
 					break;
 			}
 			playerammolist[player.id] = inv;
+		}
+		if(ev === 'getammo') {
+			const pla = args[0];
+			const slot = Number(args[1]);
+			const amount = Number(args[2]);
+			if(isNaN(slot) || slot == null || isNaN(amount) || amount == null) {
+				return;
+			}
+			const player = await this.omegga.getPlayer(pla);
+			if(player == null) {
+				return;
+			}
+			let inv = playerammolist[player.id];
+			const sender = await this.omegga.getPlugin(from);
+			sender.emitPlugin('ammocount', inv[slot]);
 		}
 	}
 	
