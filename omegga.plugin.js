@@ -22,14 +22,17 @@ const pclr = {
 	err: '[LM] <color="ff7711">',
 	inf: '<color="ffdd00">',
 	msg: '[LM] <color="aaffaa">'
-}
+};
 
 const notguns = [
-	'BrickTool', 'Hammer', 'PaintTool', 'SelectionTool', 'Guide', 'ResizeTool', 'Applicator', 'ImpactGrenade', 'StickGrenade', 'ImpulseGrenade', 'HealthPotion'
-]
+	'BrickTool', 'Hammer', 'PaintTool', 'SelectionTool', 'Guide', 'ResizeTool', 'Applicator', 'ImpulseGrenade', 'HealthPotion'
+];
+const grenades = [
+	'ImpactGrenade', 'StickGrenade'
+];
 const infiniteguns = [
 	'twincannon', 'bazooka', 'minigun'
-]
+];
 
 let dispencercooldown = [];
 
@@ -96,6 +99,12 @@ class LimitedAmmo {
 			const player = players[pi];
 			const ppawn = await player.getPawn().catch();
 			const weapon = await this.getHeldWeapon(ppawn);
+			let pa = playerammo[player.id];
+			if(pa == null) {
+				playerammo[player.id] = {grnt: '', grenade: false, ammo: ammo, selected: weapon.weapon};
+				continue;
+			}
+			let inv = playerammolist[player.id];
 			if(weapon.weapon == "None" || notguns.includes(weapon.weapon)) {
 				if(toreturn) {
 					const weprem = removed.filter(x => x.pl === player.name);
@@ -108,16 +117,35 @@ class LimitedAmmo {
 				continue;
 			}
 			if(weapon.id == null || weapon.weapon == null) {
+				if(pa.grenade != null && pa.grenade) {
+					pa.grenade = false;
+					const grenadetype = gunammotypes[pa.grnt.toLowerCase()];
+					inv[grenadetype]--;
+					playerammolist[player.id] = inv;
+					this.omegga.middlePrint(player.name, inv[grenadetype]);
+				}
 				continue;
 			}
 			let ammo = await this.getWeaponAmmo(weapon.weapon, weapon.id);
-			let pa = playerammo[player.id];
-			if(pa == null) {
-				playerammo[player.id] = {ammo: ammo, selected: weapon.weapon};
+			const ammot = gunammotypes[weapon.weapon.toLowerCase()];
+			if(ammot == null) {
+				continue;
+			}
+			if(grenades.includes(weapon.weapon)) {
+				if(inv[ammot] <= 0) {
+					this.omegga.whisper(player.name, pclr.msg + 'You ran out of ' + ammotypes[ammot] + '.</>');
+					const wep = 'Weapon_' + weapon.weapon.toLowerCase();
+					player.takeItem(wep);
+					continue;
+				}
+				pa.grenade = true;
+				pa.grnt = weapon.weapon;
+				playerammo[player.id] = pa;
 				continue;
 			}
 			if(pa.selected != weapon.weapon) {
 				pa.selected = weapon.weapon;
+				pa.grenade = false;
 				pa.ammo = ammo;
 				playerammo[player.id] = pa;
 				continue;
@@ -126,8 +154,6 @@ class LimitedAmmo {
 			if(!keys.includes(player.id)) {
 				continue;
 			}
-			let inv = playerammolist[player.id];
-			const ammot = gunammotypes[weapon.weapon.toLowerCase()];
 			const infinite = infiniteguns.includes(weapon.weapon.toLowerCase()) && totax;
 			if(inv[ammot] <= 0 && !infinite && !dead.includes(player.name)) {
 				this.omegga.whisper(player.name, pclr.msg + 'You ran out of ' + ammotypes[ammot] + '.</>');
@@ -147,7 +173,6 @@ class LimitedAmmo {
 				if(inv[ammot] < 0) {
 					inv[ammot] = 0;
 				}
-				//this.store.set(player.id, inv);
 				playerammolist[player.id] = inv;
 				this.omegga.middlePrint(player.name, inv[ammot]);
 				if(inv[ammot] <= 0) {
@@ -370,6 +395,10 @@ class LimitedAmmo {
 				for(var k in keys) {
 					const key = keys[k];
 					this.store.set(key, inv);
+					if(playerammolist[key] == null) {
+						return;
+					}
+					playerammolist[key] = inv;
 				}
 				this.omegga.whisper(name, pclr.msg + 'Wiped succesfully.</>');
 			}

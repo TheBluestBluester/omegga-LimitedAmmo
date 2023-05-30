@@ -45,6 +45,8 @@ module.exports = {
 			tacticalshotgun: 3,
 			tacticalsmg: 0,
 			typewritersmg: 0,
+			stickgrenade: 4,
+			impactgrenade: 4,
 			
 			minigun: 0,
 			twincannon: 4,
