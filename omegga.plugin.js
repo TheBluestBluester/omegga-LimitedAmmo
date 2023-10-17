@@ -346,13 +346,13 @@ class LimitedAmmo {
 			}
 			args = args.slice(2,args.length);
 			const plr = args.join(' ');
-			if(plr === name) {
-				this.omegga.whisper(name, pclr.err + 'You cannot give yourself ammo.</>');
-				return;
-			}
-			const reciever = await this.omegga.getPlayer(plr);
+			const reciever = await this.omegga.findPlayerByName(plr);
 			if(reciever == null) {
 				this.omegga.whisper(name, pclr.err + 'Could not find the reciever.</>');
+				return;
+			}
+			if(reciever.name === name) {
+				this.omegga.whisper(name, pclr.err + 'You cannot give yourself ammo.</>');
 				return;
 			}
 			const sender = await this.omegga.getPlayer(name);
@@ -487,7 +487,9 @@ class LimitedAmmo {
 					if(amount < 0) {
 						sign = ''
 					}
-					this.omegga.middlePrint(player.name, sign + amount + ' ' + ammotypes[slot]);
+					if(!Number(args[3])) {
+						this.omegga.middlePrint(player.name, sign + amount + ' ' + ammotypes[slot]);
+					}
 					break;
 			}
 			playerammolist[player.id] = inv;
