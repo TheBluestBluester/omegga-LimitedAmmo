@@ -43,7 +43,7 @@ let ammoboxfolder;
 let ammotypes;
 let gunammotypes;
 
-let playerammo = [];
+let playerammo = {};
 
 class LimitedAmmo {
 	
@@ -99,11 +99,6 @@ class LimitedAmmo {
 			const player = players[pi];
 			const ppawn = await player.getPawn().catch();
 			const weapon = await this.getHeldWeapon(ppawn);
-			let pa = playerammo[player.id];
-			if(pa == null) {
-				playerammo[player.id] = {grnt: '', grenade: false, ammo: ammo, selected: weapon.weapon};
-				continue;
-			}
 			let inv = playerammolist[player.id];
 			if(weapon.weapon == "None" || notguns.includes(weapon.weapon)) {
 				if(toreturn) {
@@ -127,6 +122,11 @@ class LimitedAmmo {
 				continue;
 			}
 			let ammo = await this.getWeaponAmmo(weapon.weapon, weapon.id);
+			let pa = playerammo[player.id];
+			if(pa == null) {
+				playerammo[player.id] = {grnt: '', grenade: false, ammo: ammo, selected: weapon.weapon};
+				continue;
+			}
 			const ammot = gunammotypes[weapon.weapon.toLowerCase()];
 			if(ammot == null) {
 				continue;
