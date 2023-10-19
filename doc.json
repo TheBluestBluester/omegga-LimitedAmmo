@@ -25,6 +25,11 @@
     },
     "TaxInfiniteWeapons": {
 	"description": "Wether or not to tax players for using weapons with infinite ammo.",
+	"default": false,
+	"type": "boolean"
+    },
+    "BanInfiniteWeapons": {
+	"description": "To delete weapons with infinite ammo.",
 	"default": true,
 	"type": "boolean"
     },

@@ -9,6 +9,7 @@ let password;
 let updatedelay;
 let loseamount;
 let totax;
+let todelete;
 let toreturn;
 let towipeleave;
 let authorized;
@@ -55,6 +56,7 @@ class LimitedAmmo {
 		updatedelay = this.config.UpdateDelay;
 		loseamount = this.config.AmountLostOnDeath;
 		totax = this.config.TaxInfiniteWeapons;
+		todelete = this.config.BanInfiniteWeapons;
 		toreturn = this.config.ReturnWeapon;
 		towipeleave = this.config.WipeOnLeave;
 		authorized = this.config.Authorized;
@@ -155,8 +157,14 @@ class LimitedAmmo {
 			if(!keys.includes(player.id)) {
 				continue;
 			}
-			const infinite = infiniteguns.includes(weapon.weapon.toLowerCase()) && totax;
-			if(inv[ammot] <= 0 && !infinite && !dead.includes(player.name)) {
+			const infinite = infiniteguns.includes(weapon.weapon.toLowerCase());
+			if(infinite && todelete) {
+				this.omegga.whisper(player.name, pclr.msg + 'This weapon is not allowed.</>');
+				const wep = 'Weapon_' + weapon.weapon.toLowerCase();
+				player.takeItem(wep);
+				continue;
+			}
+			if(inv[ammot] <= 0 && !(infinite && totax) && !dead.includes(player.name)) {
 				this.omegga.whisper(player.name, pclr.msg + 'You ran out of ' + ammotypes[ammot] + '.</>');
 				const wep = 'Weapon_' + weapon.weapon.toLowerCase();
 				player.takeItem(wep);
@@ -165,10 +173,10 @@ class LimitedAmmo {
 				}
 				continue;
 			}
-			if(pa.ammo > ammo || infinite) {
+			if(pa.ammo > ammo || (infinite && totax)) {
 				const decrease = pa.ammo - ammo;
 				inv[ammot] -= decrease;
-				if(infinite) {
+				if(infinite && totax) {
 					inv[ammot]--;
 				}
 				if(inv[ammot] < 0) {
