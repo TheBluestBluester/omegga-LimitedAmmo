@@ -64,9 +64,9 @@ class LimitedAmmo {
 	
 	async getHeldWeapon(pawn) {
 		const reg = new RegExp(
-		/BP_FigureV2_C .+?PersistentLevel\.(?<pawn>BP_FigureV2_C_\d+)\.WeaponSimState = .+(PersistentLevel.(Weapon|BP_Item)_|CurrentItemInstance=)(?<Weapon>.+)(_C_(?<ID>\w+)|,)/
+		`BP_FigureV2_C .+?PersistentLevel\.${pawn}\.WeaponSimState = .CurrentItemInstance=(.+?PersistentLevel\.(Weapon|BP_Item)_(?<Weapon>.+?)_C_(?<ID>\\d*)|(?<isNone>None))`
 		);
-		const [{groups: { Weapon, ID }}] = await this.omegga.addWatcher(reg, {
+		const [{groups: { Weapon, ID, isNone }}] = await this.omegga.addWatcher(reg, {
 			exec: () =>
 			this.omegga.writeln(
 				`getAll BP_FigureV2_C WeaponSimState Name=${pawn}`
@@ -74,7 +74,14 @@ class LimitedAmmo {
 			first: 'index',
 			timeoutDelay: 500
 		}).catch();
-		return {weapon: Weapon, id: ID};
+		
+		if(isNone) {
+			
+			return {weapon: 'None', id: null};
+		}
+		else {
+			return {weapon: Weapon, id: ID};
+		}
 	}
 	
 	async getWeaponAmmo(Weapon, id) {
@@ -101,6 +108,7 @@ class LimitedAmmo {
 			const player = players[pi];
 			const ppawn = await player.getPawn().catch();
 			const weapon = await this.getHeldWeapon(ppawn);
+			//console.log(weapon.weapon);
 			let pa = playerammo[player.id];
 			//console.log(pa);
 			if(pa == null) {
@@ -108,6 +116,18 @@ class LimitedAmmo {
 				continue;
 			}
 			let inv = playerammolist[player.id];
+			 
+			if((pa.selected != weapon.weapon || weapon.weapon == "None") && pa.grenade) {
+				if(pa.grenade != null && pa.grenade) {
+					pa.grenade = false;
+					const grenadetype = gunammotypes[pa.grnt.toLowerCase()];
+					inv[grenadetype]--;
+					playerammolist[player.id] = inv;
+					this.omegga.middlePrint(player.name, inv[grenadetype]);
+				}
+				continue;
+			}
+			
 			if(weapon.weapon == "None" || notguns.includes(weapon.weapon)) {
 				if(toreturn) {
 					const weprem = removed.filter(x => x.pl === player.name);
@@ -119,16 +139,7 @@ class LimitedAmmo {
 				}
 				continue;
 			}
-			if(weapon.id == null || weapon.weapon == null) {
-				if(pa.grenade != null && pa.grenade) {
-					pa.grenade = false;
-					const grenadetype = gunammotypes[pa.grnt.toLowerCase()];
-					inv[grenadetype]--;
-					playerammolist[player.id] = inv;
-					this.omegga.middlePrint(player.name, inv[grenadetype]);
-				}
-				continue;
-			}
+			
 			let ammo = await this.getWeaponAmmo(weapon.weapon, weapon.id);
 			const ammot = gunammotypes[weapon.weapon.toLowerCase()];
 			if(ammot == null) {
@@ -144,6 +155,7 @@ class LimitedAmmo {
 				pa.grenade = true;
 				pa.grnt = weapon.weapon;
 				playerammo[player.id] = pa;
+				pa.selected = weapon.weapon
 				continue;
 			}
 			if(pa.selected != weapon.weapon) {
