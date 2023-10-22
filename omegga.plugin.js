@@ -391,8 +391,8 @@ class LimitedAmmo {
 			}
 			sinv[slot] -= amount;
 			rinv[slot] += amount;
-			this.omegga.middlePrint(name, '-' + amount + ' ' + ammotypes[slot] + ' to ' + plr);
-			this.omegga.middlePrint(plr, '+' + amount + ' ' + ammotypes[slot] + ' from ' + name);
+			this.omegga.middlePrint(name, '-' + amount + ' ' + ammotypes[slot] + ' to ' + reciever.name);
+			this.omegga.middlePrint(reciever.name, '+' + amount + ' ' + ammotypes[slot] + ' from ' + name);
 			playerammolist[sender.id] = sinv;
 			playerammolist[reciever.id] = rinv;
 		})
