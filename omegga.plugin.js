@@ -341,7 +341,7 @@ class LimitedAmmo {
 					const owner = brs.brick_owners[brick.owner_index - 1];
 					const filter = authorized.filter(p => p.id === owner.id);
 					if(filter.length === 0) {
-						this.omegga.whisper(playername, pclr.err + 'This person is not authorized to make ammo dispencers.</>');
+						this.omegga.whisper(data.player.name, pclr.err + 'This person is not authorized to make ammo dispencers.</>');
 						return;
 					}
 				}
