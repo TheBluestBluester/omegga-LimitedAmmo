@@ -313,6 +313,16 @@ class LimitedAmmo {
 				if(password.length > 0 && d[4] !== password) {
 					return;
 				}
+				if(authorized.length > 0) {
+					const brs = await this.omegga.getSaveData({center: data.position, extent: data.brick_size});
+					const brick = brs.bricks[0];
+					const owner = brs.brick_owners[brick.owner_index - 1];
+					const filter = authorized.filter(p => p.id === owner.id);
+					if(filter.length === 0) {
+						this.omegga.whisper(data.player.name, pclr.err + 'This person is not authorized to make ammo boxes.</>');
+						return;
+					}
+				}
 				let inv = playerammolist[data.player.id];
 				const slot = Number(d[1]);
 				inv[slot] += Number(d[2]);
