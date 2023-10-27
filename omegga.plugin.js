@@ -103,6 +103,22 @@ class LimitedAmmo {
 	async tick() {
 		try {
 		
+		const entries = Object.entries(dispencercooldown);
+		
+		for(let e in entries) {
+			
+			const entry = entries[e];
+			
+			if(entry[1] > 0) {
+				entry[1] -= updatedelay;
+				dispencercooldown[entry[0]] = entry[1];
+			}
+			else {
+				delete dispencercooldown[entry[0]];
+			}
+			
+		}
+		
 		const players = this.omegga.players;
 		for(var pi in players) {
 			const player = players[pi];
@@ -340,8 +356,8 @@ class LimitedAmmo {
 				if(password.length > 0 && d[3] !== password) {
 					return;
 				}
-				const timeout = dispencercooldown.filter(x => x === data.position.join(' '));
-				if(timeout.length > 0) {
+				const timeout = dispencercooldown[data.position.join(' ')];
+				if(timeout != null) {
 					this.omegga.middlePrint(data.player.name, 'This ammo dispencer is on cooldown!');
 					return;
 				}
@@ -356,8 +372,8 @@ class LimitedAmmo {
 					}
 				}
 				this.createBox(data.player.name, d[1], data.position, data.brick_size);
-				dispencercooldown.push(data.position.join(' '));
-				setTimeout(() => dispencercooldown.splice(dispencercooldown.indexOf(data.position.join(' ')),1), Number(d[2]) * 1000);
+				dispencercooldown[data.position.join(' ')] = Number(d[2]) * 1000;
+				//setTimeout(() => dispencercooldown.splice(dispencercooldown.indexOf(data.position.join(' ')),1), Number(d[2]) * 1000);
 			}
 		})
 		.on('cmd:giveammo', async (name, ...args) => {
