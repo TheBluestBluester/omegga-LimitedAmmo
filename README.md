@@ -1,35 +1,22 @@
 # omegga-LimitedAmmo
 Make people care where they shoot.
-This plugin gives players limited ammounts of ammo, ammo boxes and ammo dispencers.
+This plugin gives players limited ammounts of ammo, ammo boxes and ammo spawners.
 
-## Creating ammo dispencers.
-To create an ammo dispencer you first place a brick of your choice. Then you add an interact component.
+## Creating ammo spawnerss.
+To create an ammo spawner, place down a brick with a "Print To Console" in the interact component set to the following:
+`ammospawner (Minimum box index) (Maximum box index) (Cooldown in seconds.)`
 
-Then you write in "Print to console" the following:
-
-ammodis (ammo box savefile name without .brs) (cooldown in seconds) (password)
-
-This also supports random ammo! To have the dispencer generate random ammo instead of the brs file write:
-
-random-(min range)-(max range)
-
-...or skip the ammo box entirely by writing:
-
-give-(ammo type)-(amount)
+The ammo spawners need to be cached for the plugin to recognize them.
+To cache ammo spawners you have to type `/recache`.
+The plugin automatically recaches on startup or when a save is loaded.
 
 ## Creating custom ammo boxes.
-To make the ammo box functional add a brick ON TOP of the ammo box and add an interact component.
+To make the ammo box functional add an interact component to a brick. It can be any brick, but preferebly it should be somewhere where player's can easily click it.
+To define the ammo box's ammo type, write the ammo type name into "Message".
+In "Print To Console" write the amount of ammo that will be given, and the order.
+Order value is for ordering ammo boxes. The higher up the ammo box is in the order, the higher the rarity.
 
-Then you write in "Print to console" the following:
-
-limitedammo (ammo type as a number) (ammo amount) (extention of the clear box from the bottom of the brick in x2 microbricks)
-
-Once you finished your ammo box put it into "AmmoBoxes" folder inside the plugin and then reload.
-
-## Interacting from other plugins
-
-You can make the plugin give or remove ammo from players using emitPlugin.
-
+## Plugin events.
 ### setammo
 
 Sets player's ammo count;
