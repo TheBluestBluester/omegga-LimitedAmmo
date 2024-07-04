@@ -2,7 +2,7 @@
 Make people care where they shoot.
 This plugin gives players limited ammounts of ammo, ammo boxes and ammo spawners.
 
-## Creating ammo spawnerss.
+## Creating ammo spawners.
 To create an ammo spawner, place down a brick with a "Print To Console" in the interact component set to the following:
 `ammospawner (Minimum box index) (Maximum box index) (Cooldown in seconds.)`
 
