@@ -8,11 +8,6 @@
       "default": 300,
       "type": "number"
     },
-    "Password": {
-      "description": "Prevents people from making ammo boxes and dispencers.",
-      "default": "",
-      "type": "password"
-    },
     "Authorized": {
       "description": "List of authorized players that can make ammo boxes and dispencers.",
       "default": [],
@@ -20,11 +15,11 @@
     },
     "AmountLostOnDeath": {
       "description": "How much of ammo the player loses upon death. Requires death events to work. 0.0 - 1.0",
-      "default": 0.0,
+      "default": 1.0,
       "type": "number"
     },
     "TaxInfiniteWeapons": {
-	"description": "Wether or not to tax players for using weapons with infinite ammo.",
+	"description": "To tax players for using weapons with infinite ammo.",
 	"default": false,
 	"type": "boolean"
     },
@@ -38,8 +33,8 @@
 	"default": true,
 	"type": "boolean"
     },
-    "WipeOnLeave": {
-	"description": "Wipe the player's ammo when they leave.",
+	 "SaveAmmoOnLeave": {
+	"description": "To save ammo when the player leaves.",
 	"default": false,
 	"type": "boolean"
     }

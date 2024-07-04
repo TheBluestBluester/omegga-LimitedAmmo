@@ -1,8 +1,11 @@
 const fs = require('fs');
 const { brs } = OMEGGA_UTIL;
 const amlist = require('./AmmoSetup');
+const vec = require('./vectorOperations');
 
+let last = 0;
 let interval;
+let ammoSpawnInterval;
 let enabled = true;
 
 let password;
@@ -13,11 +16,18 @@ let todelete;
 let toreturn;
 let towipeleave;
 let authorized;
+let saveAmmo;
 
-let boxbrslist = {};
+let ammoBoxData = [];
 
 let removed = [];
 let playerammolist = {};
+
+const ammoBoxOwner = [{
+	id: '00000000-0000-0000-0000-4000b0800000',
+	name: 'Ammo box',
+	bricks: 0
+}];
 
 const pclr = {
 	err: '[LM] <color="ff7711">',
@@ -35,11 +45,11 @@ const infiniteguns = [
 	'twincannon', 'bazooka', 'minigun'
 ];
 
-let dispencercooldown = [];
-
 let dead = [];
 
 let ammoboxfolder;
+
+let ammoSpawners = [];
 
 let ammotypes;
 let gunammotypes;
@@ -58,8 +68,8 @@ class LimitedAmmo {
 		totax = this.config.TaxInfiniteWeapons;
 		todelete = this.config.BanInfiniteWeapons;
 		toreturn = this.config.ReturnWeapon;
-		towipeleave = this.config.WipeOnLeave;
 		authorized = this.config.Authorized;
+		saveAmmo = this.config.SaveAmmoOnLeave;
 	}
 	
 	async getHeldWeapon(pawn) {
@@ -100,24 +110,37 @@ class LimitedAmmo {
 		return Number(Ammo);
 	}
 	
-	async tick() {
-		try {
+	async ammoSpawnerTick() {
 		
-		const entries = Object.entries(dispencercooldown);
-		
-		for(let e in entries) {
+		for(let s in ammoSpawners) {
 			
-			const entry = entries[e];
+			let spawner = ammoSpawners[s];
 			
-			if(entry[1] > 0) {
-				entry[1] -= updatedelay;
-				dispencercooldown[entry[0]] = entry[1];
+			if(spawner.boxIndex != null) { continue; }
+			
+			if(spawner.coolDown > 0) {
+				
+				spawner.coolDown -= 0.01;
+				
+				if(spawner.coolDown <= 0) {
+					
+					spawner.coolDown = spawner.coolDownMax;
+					
+					const boxId = await this.createBox(spawner.pos, spawner.minMax[0], spawner.minMax[1]);
+					spawner.boxIndex = boxId;
+					
+				}
+				
 			}
-			else {
-				delete dispencercooldown[entry[0]];
-			}
+			
+			ammoSpawners[s] = spawner;
 			
 		}
+		
+	}
+	
+	async tick() {
+		try {
 		
 		const players = this.omegga.players;
 		for(var pi in players) {
@@ -128,7 +151,7 @@ class LimitedAmmo {
 			let pa = playerammo[player.id];
 			//console.log(pa);
 			if(pa == null) {
-				playerammo[player.id] = {grnt: '', grenade: false, ammo: 0, selected: weapon.weapon};
+				playerammo[player.id] = {grnt: '', grenade: false, ammo: 0, selected: null};
 				continue;
 			}
 			let inv = playerammolist[player.id];
@@ -179,6 +202,7 @@ class LimitedAmmo {
 				pa.grenade = false;
 				pa.ammo = ammo;
 				playerammo[player.id] = pa;
+				this.omegga.middlePrint(player.name, inv[ammot]);
 				continue;
 			}
 			const keys = Object.keys(playerammolist);
@@ -229,88 +253,154 @@ class LimitedAmmo {
 	}
 	
 	async setupBoxes() {
+		
 		for(var abf in ammoboxfolder) {
-			const box = ammoboxfolder[abf];
-			const boxfile = fs.readFileSync(__dirname + "/AmmoBoxes/"+box);
-			const boxbrs = brs.read(boxfile);
-			let bricks = boxbrs.bricks;
-			for(var b in bricks) {
-				let brick = bricks[b];
-				if('components' in brick) {
-					if('BCD_Interact' in brick.components) {
-						let consoletag = brick.components.BCD_Interact.ConsoleTag.split(' ');
-						if(consoletag.length < 5) {
-							consoletag.push(password);
-						}
-						else if(consoletag[0].toLowerCase == 'limitedammo') {
-							consoletag[4] = password;
-						}
-						brick.components.BCD_Interact.ConsoleTag = consoletag.join(' ');
-					}
-				}
-				bricks[b] = brick;
-			}
-			boxbrs.bricks = bricks;
-			const boxsubstr = box.substr(0, box.length - 4);
-			boxbrslist[boxsubstr] = boxbrs;
+			
+			const fileName = ammoboxfolder[abf];
+			const file = fs.readFileSync(__dirname + '/AmmoBoxes/' + fileName);
+			
+			const brsSave = brs.read(file);
+			
+			const brickInd = brsSave.bricks.findIndex(b => 'BCD_Interact' in b.components);
+			let interactBrick = brsSave.bricks[brickInd];
+			
+			const bounds = OMEGGA_UTIL.brick.getBounds(brsSave);
+			const extent = vec.div(vec.sub(bounds.maxBound, bounds.minBound), 2);
+			
+			const ammoType = ammotypes.findIndex(i => i == interactBrick.components.BCD_Interact.Message);
+			const data = interactBrick.components.BCD_Interact.ConsoleTag.split(' ');
+			const amount = Number(data[0]);
+			const order = Number(data[1]);
+			
+			interactBrick.components.BCD_Interact.Message = '';
+			interactBrick.components.BCD_Interact.ConsoleTag;
+			brsSave.bricks[brickInd] = interactBrick;
+			brsSave.brick_owners = ammoBoxOwner;
+			
+			ammoBoxData.push({ammoType: ammoType, amount: amount, center: bounds.center, extent: extent, order: order, brs: brsSave, interInd: brickInd});
+			
 		}
+		
 	}
 	
-	async createBox(playername, boxname, pos, size) {
-		function random(min, max) {
-			return Math.round(Math.random() * (max - min)) + min;
-		}
-		const sb = boxname.split('-');
-		let foundbox;
-		switch(sb[0].toLowerCase()) {
-			case 'random':
-			const minrange = Number(sb[1]);
-			const maxrange = Number(sb[2]);
-			if(isNaN(minrange) || isNaN(maxrange)) {
-				this.omegga.whisper(playername, pclr.err + 'Min range and max range must be both numbers.</>');
-				return;
-			}
-			const values = Object.keys(boxbrslist);
-			if(minrange < 0 || minrange > maxrange || maxrange > values.length - 1) {
-				this.omegga.whisper(playername, pclr.err + 'This dispencer may have incorrect values setup.</>');
-				return;
-			}
-			const minmax = maxrange - minrange;
-			boxname = values[Math.abs(random(-minmax, minmax)) + minrange];
-			default:
-			foundbox = boxbrslist[boxname];
-			if(foundbox == null) {
-				this.omegga.whisper(playername, pclr.err + 'Ammo box ' + boxname + ' doesn\'t exist.</>');
-				return;
-			}
-			this.omegga.loadSaveData(foundbox, {quiet: true, offX: pos[0], offY: pos[1], offZ: pos[2] + size[2]});
-			break;
+	copyArray = (array) => {
+		
+		let newArray = [];
+		for(let i in array) {
 			
-			case 'give':
-			const ammotype = ammotypes.find(at => at.toLowerCase().includes(sb[1].toLowerCase()));
-			const count = Number(sb[2]);
-			if(ammotype == null) {
-				this.omegga.whisper(playername, pclr.err + 'Invalid ammo type.</>');
-				return;
-			}
-			if(isNaN(count)) {
-				this.omegga.whisper(playername, pclr.err + 'Ammo amount must be a number.</>');
-				return;
-			}
-			const pl = await this.omegga.getPlayer(playername);
-			let inv = playerammolist[pl.id];
-			inv[ammotypes.indexOf(ammotype)] += count;
-			this.omegga.middlePrint(playername, '+' + count + ' ' + ammotype);
-			playerammolist[pl.id] = inv;
-			break;
+			newArray.push(array[i]);
+			
 		}
-	}		
+		
+		return newArray;
+		
+	}
+	
+	async createBox(pos, min, max) {
+		
+		const id = Math.floor(Math.random() * 10000);
+		
+		let ammoBoxList = (this.copyArray(ammoBoxData)).splice(min, max - min + 1);
+		ammoBoxList = ammoBoxList.sort((a, b) => a.order - b.order);
+		
+		const selInd = Math.floor((Math.random() ** 2) * ammoBoxList.length);
+		const ammoBox = ammoBoxList[selInd];
+		
+		const trueCenter = vec.add(ammoBox.center, pos);
+		
+		let interactBrick = ammoBox.brs.bricks[ammoBox.interInd];
+		interactBrick.components.BCD_Interact.ConsoleTag = 'ammoBox ' + ammoBox.ammoType + ' ' + ammoBox.amount + ' ' + trueCenter.join(' ') + ' ' + ammoBox.extent.join(' ') + ' ' + id;
+		ammoBox.brs.bricks[ammoBox.interInd] = interactBrick;
+		
+		this.omegga.loadSaveData(ammoBox.brs, {quiet: true, offX: pos[0], offY: pos[1], offZ: pos[2]});
+		
+		return id;
+		
+	}
+	
+	async reCacheAmmoSpawns(result) {
+		
+		if(!result) { return; }
+		
+		console.log("Recaching ammo spawns...");
+		
+		const host = this.omegga.host;
+		
+		ammoSpawners = [];
+		
+		const brs = await result.omegga.getSaveData();
+		if (brs == null) { return; }
+		
+		let bricks = brs.bricks.filter(b => 'BCD_Interact' in b.components);
+		
+		for(let b in bricks) {
+			
+			const brick = bricks[b];
+			
+			const data = brick.components.BCD_Interact.ConsoleTag.split(' ');
+			const tag = (data[0]).toLowerCase();
+			
+			if(tag == 'ammospawner' && data.length == 4) {
+				
+				const owner = brs.brick_owners[brick.owner_index - 1];
+				const authorizedOwner = authorized.find(ap => ap.name == owner.name);
+				if(!(owner.name == host.name || authorizedOwner)) { continue; }
+				
+				let ammoSpawnPos = brick.position;
+				ammoSpawnPos[2] += brick.size[2];
+				
+				const coolDown = Number(data[3]);
+				
+				ammoSpawners.push({pos: ammoSpawnPos, minMax: [Number(data[1]), Number(data[2])], coolDown: coolDown, coolDownMax: coolDown, boxIndex: null});
+				
+			}
+			
+		}
+		
+		result.omegga.broadcast(result.pclr.msg + 'Ammo spawns cached!<>');
+		result.omegga.clearBricks('00000000-0000-0000-0000-4000b0800000', {quiet: true});
+		
+	}
+	
+	// Detect uploading to recache all ammo spawns.
+	async setupLoadListener() {
+		
+		function pattern(line, omegga) {
+			//try{
+			
+			const regex = /\[(?<counter>\d+)\]LogChat: (?<player>\w+) finished uploading/;
+			const match = line.match(regex);
+			if(match == null) {
+				return;
+			}
+			
+			let groups = match.groups
+			if(groups.counter == last) {
+				return;
+			}
+			last = groups.counter;
+			
+			// For some reason omegga is undefined in functions so this is the work-around i came up with.
+			groups.omegga = omegga;
+			groups.pclr = pclr;
+			
+			return groups;
+			
+			//}catch(e){}
+		}
+		
+		this.omegga.addMatcher((line) => pattern(line, this.omegga), this.reCacheAmmoSpawns);
+		
+	}
+	
 	async init() {
 		ammoboxfolder = fs.readdirSync(__dirname + "/AmmoBoxes");
-		this.setupBoxes();
+		
 		const l = await amlist.setupAmmo();
 		ammotypes = l[0];
 		gunammotypes = l[1]
+		
+		this.setupBoxes();
 		
 		if(loseamount > 0) {
 			const deathevents = await this.omegga.getPlugin('deathevents');
@@ -324,57 +414,46 @@ class LimitedAmmo {
 		}
 		
 		this.omegga.on('interact', async data => {
-			const d = data.message.split(' ');
-			if(d[0].toLowerCase() === 'limitedammo') {
-				if(password.length > 0 && d[4] !== password) {
-					return;
-				}
-				if(authorized.length > 0) {
-					const brs = await this.omegga.getSaveData({center: data.position, extent: data.brick_size});
-					const brick = brs.bricks[0];
-					const owner = brs.brick_owners[brick.owner_index - 1];
-					const filter = authorized.filter(p => p.id === owner.id);
-					if(filter.length === 0) {
-						this.omegga.whisper(data.player.name, pclr.err + 'This person is not authorized to make ammo boxes.</>');
-						return;
-					}
-				}
-				let inv = playerammolist[data.player.id];
-				const slot = Number(d[1]);
-				inv[slot] += Number(d[2]);
-				this.omegga.middlePrint(data.player.name, '+' + d[2] + ' ' + ammotypes[d[1]]);
-				playerammolist[data.player.id] = inv;
-				let size = data.brick_size;
-				let pos = data.position;
-				if(!isNaN(Number(d[3]))) {
-					size[2] += Number(d[3])
-					pos[2] -= Number(d[3])
-				}
-				this.omegga.clearRegion({center: pos, extent: size});
+			
+			const split = data.message.split(' ');
+			
+			if(split[0] != 'ammoBox') { return; }
+			
+			//console.log(data.message);
+			const brs = await this.omegga.getSaveData({center: data.position, extent: data.brick_size});
+			const owner = brs.brick_owners[brs.bricks[0].owner_index - 1];
+			if(owner.name != ammoBoxOwner[0].name) {
+				this.omegga.whisper(data.player.name, pclr.err + 'This box was created by a player.<>');
+				return;
 			}
-			if(d[0].toLowerCase() === 'ammodis') {
-				if(password.length > 0 && d[3] !== password) {
-					return;
-				}
-				const timeout = dispencercooldown[data.position.join(' ')];
-				if(timeout != null) {
-					this.omegga.middlePrint(data.player.name, 'This ammo dispencer is on cooldown!');
-					return;
-				}
-				if(authorized.length > 0) {
-					const brs = await this.omegga.getSaveData({center: data.position, extent: data.brick_size});
-					const brick = brs.bricks[0];
-					const owner = brs.brick_owners[brick.owner_index - 1];
-					const filter = authorized.filter(p => p.id === owner.id);
-					if(filter.length === 0) {
-						this.omegga.whisper(data.player.name, pclr.err + 'This person is not authorized to make ammo dispencers.</>');
-						return;
-					}
-				}
-				this.createBox(data.player.name, d[1], data.position, data.brick_size);
-				dispencercooldown[data.position.join(' ')] = Number(d[2]) * 1000;
-				//setTimeout(() => dispencercooldown.splice(dispencercooldown.indexOf(data.position.join(' ')),1), Number(d[2]) * 1000);
+			
+			const splitNum = [];
+			for(let i=1;i<split.length;i++) { splitNum.push(Number(split[i])); }
+			
+			const center = splitNum.splice(2, 3);
+			const extent = splitNum.splice(2, 3);
+			
+			this.omegga.clearRegion({center: center, extent: extent});
+			this.omegga.middlePrint(data.player.name, '+' + splitNum[1] + ' ' + ammotypes[splitNum[0]]);
+			
+			playerammolist[data.player.id][splitNum[0]] += splitNum[1];
+			
+			const ammoSpawnerInd = ammoSpawners.findIndex(as => as.boxIndex == splitNum[2]);
+			ammoSpawners[ammoSpawnerInd].boxIndex = null;
+			
+			
+		})
+		.on('cmd:recache', async name => {
+			
+			const player = await this.omegga.getPlayer(name);
+			const auth = authorized.find(ap => ap.name == name);
+			if(!(await player.isHost() || auth)) {
+				this.omegga.whisper(name, pclr.err + 'You are not trusted enough to use this command!</>');
+				return;
 			}
+			
+			this.reCacheAmmoSpawns({omegga: this.omegga, pclr: pclr});
+			
 		})
 		.on('cmd:giveammo', async (name, ...args) => {
 			const amount = Math.floor(Number(args[0]));
@@ -456,35 +535,60 @@ class LimitedAmmo {
 		.on('join', async player => {
 			const keys = await this.store.keys();
 			let inv = [];
-			if(!keys.includes(player.id)) {
-				for(var i in ammotypes) {
-					inv[i] = 0;
+			for(let i in ammotypes) {
+				inv.push(0);
+			}
+			
+			if(saveAmmo) {
+				
+				if(!keys.includes(player.id)) {
+					this.store.set(player.id, inv);
 				}
-				this.store.set(player.id, inv);
+				else {
+					inv = await this.store.get(player.id);
+				}
+				
 			}
-			else {
-				inv = await this.store.get(player.id);
-			}
+			
 			playerammolist[player.id] = inv;
 		})
 		.on('leave', async player => {
-			let inv = playerammolist[player.id];
-			if(towipeleave) {
-				for(var i in inv) {
-					inv[i] = 0;
-				}
+			
+			if(saveAmmo) {
+				
+				let inv = playerammolist[player.id];
+				this.store.set(player.id, inv);
+				
 			}
-			this.store.set(player.id, inv);
+
 			delete playerammolist[player.id];
 		});
 		interval = setInterval(() => this.tick(), updatedelay);
+		ammoSpawnInterval = setInterval(() => this.ammoSpawnerTick(), 10);
 		const players =  this.omegga.players;
+		const keys = await this.store.keys();
 		for(var pi in players) {
 			const player = players[pi];
-			let inv = await this.store.get(player.id);
+			let inv = [];
+			for(let i in ammotypes) {
+				inv.push(0);
+			}
+			
+			if(saveAmmo) {
+				if(!keys.includes(player.id)) {
+					this.store.set(player.id, inv);
+				}
+				else {
+					inv = await this.store.get(player.id);
+				}
+			}
+			
 			playerammolist[player.id] = inv;
 		}
-		return { registeredCommands: ['giveammo', 'reset', 'listammo', 'wipeammo'] };
+		
+		this.reCacheAmmoSpawns({omegga: this.omegga, pclr: pclr}).catch((e) => {console.log(e)});
+		
+		return { registeredCommands: ['giveammo', 'reset', 'listammo', 'wipeammo', 'recache'] };
 	}
 	
 	async pluginEvent(event, from, ...args) {
@@ -565,18 +669,13 @@ class LimitedAmmo {
 			deathevents.emitPlugin('unsubscribe');
 		}
 		clearInterval(interval);
+		clearInterval(ammoSpawnInterval);
+		
+		if(!saveAmmo) { return; }
 		const players = this.omegga.players;
 		for(var pi in players) {
 			const player = players[pi];
-			let inv = [];
-			if(towipeleave) {
-				for(var i in ammotypes) {
-					inv[i] = 0;
-				}
-			}
-			else {
-				inv = playerammolist[player.id];
-			}
+			let inv = playerammolist[player.id];
 			this.store.set(player.id, inv);
 		}
 	}
