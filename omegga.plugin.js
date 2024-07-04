@@ -17,8 +17,11 @@ let toreturn;
 let towipeleave;
 let authorized;
 let saveAmmo;
+let starterAmmo;
 
 let ammoBoxData = [];
+
+let defaultAmmo = [];
 
 let removed = [];
 let playerammolist = {};
@@ -70,6 +73,7 @@ class LimitedAmmo {
 		toreturn = this.config.ReturnWeapon;
 		authorized = this.config.Authorized;
 		saveAmmo = this.config.SaveAmmoOnLeave;
+		starterAmmo = this.config.StarterAmmo
 	}
 	
 	async getHeldWeapon(pawn) {
@@ -402,6 +406,17 @@ class LimitedAmmo {
 		
 		this.setupBoxes();
 		
+		for(let i=0;i<ammotypes.length;i++) {
+			
+			if(i > starterAmmo.length - 1) {
+				defaultAmmo.push(0);
+			}
+			else {
+				defaultAmmo.push(starterAmmo[i]);
+			}
+			
+		}
+		
 		if(loseamount > 0) {
 			const deathevents = await this.omegga.getPlugin('deathevents');
 			if(deathevents) {
@@ -514,10 +529,7 @@ class LimitedAmmo {
 			const player = await this.omegga.getPlayer(name);
 			if(await player.isHost()) {
 				const keys = await this.store.keys();
-				let inv = [];
-				for(var i in ammotypes) {
-					inv[i] = 0;
-				}
+				let inv = this.copyArray(defaultAmmo);
 				for(var k in keys) {
 					const key = keys[k];
 					this.store.set(key, inv);
@@ -534,10 +546,7 @@ class LimitedAmmo {
 		})
 		.on('join', async player => {
 			const keys = await this.store.keys();
-			let inv = [];
-			for(let i in ammotypes) {
-				inv.push(0);
-			}
+			let inv = this.copyArray(defaultAmmo);
 			
 			if(saveAmmo) {
 				
@@ -569,10 +578,7 @@ class LimitedAmmo {
 		const keys = await this.store.keys();
 		for(var pi in players) {
 			const player = players[pi];
-			let inv = [];
-			for(let i in ammotypes) {
-				inv.push(0);
-			}
+			let inv = this.copyArray(defaultAmmo);
 			
 			if(saveAmmo) {
 				if(!keys.includes(player.id)) {

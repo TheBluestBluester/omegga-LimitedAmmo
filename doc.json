@@ -18,6 +18,12 @@
       "default": 1.0,
       "type": "number"
     },
+	"StarterAmmo": {
+      "description": "How much of ammo is given when respawning or joining. Number of values depends on the ammo setup.",
+      "default": [],
+      "type": "list",
+	  "itemType": "number"
+    },
     "TaxInfiniteWeapons": {
 	"description": "To tax players for using weapons with infinite ammo.",
 	"default": false,
