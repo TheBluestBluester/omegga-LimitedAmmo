@@ -20,7 +20,7 @@
     },
 	"StarterAmmo": {
       "description": "How much of ammo is given when respawning or joining. Number of values depends on the ammo setup.",
-      "default": [],
+      "default": ["20", "0", "0", "0", "0"],
       "type": "list",
 	  "itemType": "number"
     },
