@@ -271,19 +271,71 @@ class LimitedAmmo {
 			const bounds = OMEGGA_UTIL.brick.getBounds(brsSave);
 			const extent = vec.div(vec.sub(bounds.maxBound, bounds.minBound), 2);
 			
-			const ammoType = ammotypes.findIndex(i => i == interactBrick.components.BCD_Interact.Message);
-			const data = interactBrick.components.BCD_Interact.ConsoleTag.split(' ');
-			const amount = Number(data[0]);
-			const order = Number(data[1]);
-			
-			interactBrick.components.BCD_Interact.Message = '';
-			interactBrick.components.BCD_Interact.ConsoleTag;
-			brsSave.bricks[brickInd] = interactBrick;
-			brsSave.brick_owners = ammoBoxOwner;
-			
-			ammoBoxData.push({ammoType: ammoType, amount: amount, center: bounds.center, extent: extent, order: order, brs: brsSave, interInd: brickInd});
+			if(interactBrick.components.BCD_Interact.Message == "ALL") {
+				
+				const data = interactBrick.components.BCD_Interact.ConsoleTag.split(' ');
+				if(this.checkArrayNaN(data)) {
+					this.omegga.broadcast(pclr.err + 'Ammo box "' + fileName + '" contains invalid data.<>');
+					continue;
+				}
+				
+				const order = Number(data[0]);
+				const randomPerc = Number(data[1]) / 100;
+				const amounts = data.splice(2, data.length - 2);
+				if(amounts.length != ammotypes.length) {
+					this.omegga.broadcast(pclr.err + 'Ammo box "' + fileName + '" contains invalid amount of params.<>');
+					continue;
+				}
+				
+				interactBrick.components.BCD_Interact.Message = '';
+				interactBrick.components.BCD_Interact.ConsoleTag;
+				brsSave.bricks[brickInd] = interactBrick;
+				brsSave.brick_owners = ammoBoxOwner;
+				
+				ammoBoxData.push({ammoType: "ALL", amounts: amounts, random: randomPerc, center: bounds.center, extent: extent, order: order, brs: brsSave, interInd: brickInd});
+				
+			}
+			else {
+				
+				const ammoType = ammotypes.findIndex(i => i == interactBrick.components.BCD_Interact.Message);
+				if(ammoType == -1) {
+					this.omegga.broadcast(pclr.err + 'Ammo box "' + fileName + '" contains invalid ammo type.<>');
+					continue;
+				}
+				
+				const data = interactBrick.components.BCD_Interact.ConsoleTag.split(' ');
+				if(this.checkArrayNaN(data)) {
+					this.omegga.broadcast(pclr.err + 'Ammo box "' + fileName + '" contains invalid data.<>');
+					continue;
+				}
+				
+				const amount = Number(data[0]);
+				const order = Number(data[1]);
+				
+				interactBrick.components.BCD_Interact.Message = '';
+				interactBrick.components.BCD_Interact.ConsoleTag;
+				brsSave.bricks[brickInd] = interactBrick;
+				brsSave.brick_owners = ammoBoxOwner;
+				
+				ammoBoxData.push({ammoType: ammoType, amount: amount, center: bounds.center, extent: extent, order: order, brs: brsSave, interInd: brickInd});
+				
+			}
 			
 		}
+		
+	}
+	
+	checkArrayNaN = (array) => {
+		
+		for(let i in array) {
+			
+			if(isNaN(array[i])) {
+				return true;
+			}
+			
+		}
+		
+		return false;
 		
 	}
 	
@@ -304,16 +356,26 @@ class LimitedAmmo {
 		
 		const id = Math.floor(Math.random() * 10000);
 		
-		let ammoBoxList = (this.copyArray(ammoBoxData)).splice(min, max - min + 1);
-		ammoBoxList = ammoBoxList.sort((a, b) => a.order - b.order);
-		
+		let ammoBoxList = this.copyArray(ammoBoxData);
+		ammoBoxList = (ammoBoxList.sort((a, b) => a.order - b.order)).splice(min, max - min + 1);
+		//console.log(ammoBoxList);
 		const selInd = Math.floor((Math.random() ** 2) * ammoBoxList.length);
 		const ammoBox = ammoBoxList[selInd];
 		
 		const trueCenter = vec.add(ammoBox.center, pos);
 		
 		let interactBrick = ammoBox.brs.bricks[ammoBox.interInd];
-		interactBrick.components.BCD_Interact.ConsoleTag = 'ammoBox ' + ammoBox.ammoType + ' ' + ammoBox.amount + ' ' + trueCenter.join(' ') + ' ' + ammoBox.extent.join(' ') + ' ' + id;
+		if(ammoBox.ammoType == "ALL") {
+			
+			let randomAmounts = this.copyArray(ammoBox.amounts);
+			for(let i=0;i<randomAmounts.length;i++) { randomAmounts[i] = Math.floor(((1 - Math.random() * ammoBox.random)) * randomAmounts[i])}
+			
+			interactBrick.components.BCD_Interact.ConsoleTag = 'ammoBox ALL ' + randomAmounts.join(',') + ' ' + trueCenter.join(' ') + ' ' + ammoBox.extent.join(' ') + ' ' + id;
+			
+		}
+		else {
+			interactBrick.components.BCD_Interact.ConsoleTag = 'ammoBox ' + ammoBox.ammoType + ' ' + ammoBox.amount + ' ' + trueCenter.join(' ') + ' ' + ammoBox.extent.join(' ') + ' ' + id;
+		}
 		ammoBox.brs.bricks[ammoBox.interInd] = interactBrick;
 		
 		this.omegga.loadSaveData(ammoBox.brs, {quiet: true, offX: pos[0], offY: pos[1], offZ: pos[2]});
@@ -355,7 +417,18 @@ class LimitedAmmo {
 				
 				const coolDown = Number(data[3]);
 				
-				ammoSpawners.push({pos: ammoSpawnPos, minMax: [Number(data[1]), Number(data[2])], coolDown: coolDown, coolDownMax: coolDown, boxIndex: null});
+				if(isNaN(coolDown)) {
+					result.omegga.broadcast(result.pclr.err + 'Ammo spawner at [' + ammoSpawnPos + '] contains invalid cooldown paramteres.<>');
+					continue;
+				}
+				
+				const minMax = [Number(data[1]), Number(data[2])];
+				if(isNaN(minMax[0]) || isNaN(minMax[1]) || minMax[0] > minMax[1] || minMax[0] < 0 || minMax[1] > ammoBoxData.length - 1) {
+					result.omegga.broadcast(result.pclr.err + 'Ammo spawner at [' + ammoSpawnPos + '] contains invalid min-max paramteres.<>');
+					continue;
+				}
+				
+				ammoSpawners.push({pos: ammoSpawnPos, minMax: minMax, coolDown: coolDown, coolDownMax: coolDown, boxIndex: null});
 				
 			}
 			
@@ -412,7 +485,7 @@ class LimitedAmmo {
 				defaultAmmo.push(0);
 			}
 			else {
-				defaultAmmo.push(starterAmmo[i]);
+				defaultAmmo.push(Number(starterAmmo[i]));
 			}
 			
 		}
@@ -449,9 +522,27 @@ class LimitedAmmo {
 			const extent = splitNum.splice(2, 3);
 			
 			this.omegga.clearRegion({center: center, extent: extent});
-			this.omegga.middlePrint(data.player.name, '+' + splitNum[1] + ' ' + ammotypes[splitNum[0]]);
 			
-			playerammolist[data.player.id][splitNum[0]] += splitNum[1];
+			if(split[1] == "ALL") {
+				
+				let messageArray = [];
+				
+				let amounts = split[2].split(',');
+				for(let i=0;i<amounts.length;i++) {
+					//console.log(Number(amounts[i]));
+					playerammolist[data.player.id][i] += Number(amounts[i]);
+					
+					messageArray.push('+ ' + amounts[i] + ' ' + ammotypes[i]);
+					
+				}
+				
+				this.omegga.middlePrint(data.player.name, messageArray.join(', '));
+				
+			}
+			else {
+				playerammolist[data.player.id][splitNum[0]] += splitNum[1];
+				this.omegga.middlePrint(data.player.name, '+' + splitNum[1] + ' ' + ammotypes[splitNum[0]]);
+			}
 			
 			const ammoSpawnerInd = ammoSpawners.findIndex(as => as.boxIndex == splitNum[2]);
 			ammoSpawners[ammoSpawnerInd].boxIndex = null;
@@ -599,7 +690,7 @@ class LimitedAmmo {
 	
 	async pluginEvent(event, from, ...args) {
 		const ev = event.toLowerCase();
-		if(ev === 'death' && loseamount > 0 && loseamount <= 1) {
+		if(ev === 'death' && loseamount > 0 && loseamount <= 100) {
 			if(args[0] == null) {
 				return;
 			}
@@ -607,7 +698,7 @@ class LimitedAmmo {
 			let inv = playerammolist[player.id];
 			for(var i in inv) {
 				let ammo = inv[i];
-				ammo = Math.floor(ammo * (1 - loseamount));
+				ammo = Math.floor(ammo * (1 - loseamount / 100));
 				inv[i] = ammo;
 			}
 			playerammolist[player.id] = inv;

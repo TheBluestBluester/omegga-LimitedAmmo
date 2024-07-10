@@ -14,7 +14,7 @@
       "type": "players"
     },
     "AmountLostOnDeath": {
-      "description": "How much of ammo the player loses upon death. Requires death events to work. 0.0 - 1.0",
+      "description": "How much of ammo the player loses upon death. Requires death events to work. 0% - 100%",
       "default": 1.0,
       "type": "number"
     },
