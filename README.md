@@ -5,7 +5,7 @@ This plugin gives players limited ammounts of ammo, ammo boxes and ammo spawners
 ## Creating ammo spawners.
 To create an ammo spawner, place down a brick with a "Print To Console" in the interact component set to the following:
 
-`ammospawner (Minimum box index) (Maximum box index) (Cooldown in seconds.)`
+`ammospawner (Minimum box index) (Maximum box index) (Cooldown in seconds)`
 
 The ammo spawners need to be cached for the plugin to recognize them.
 To cache ammo spawners you have to type `/recache`.
