@@ -23,7 +23,7 @@ let ammoBoxData = [];
 
 let defaultAmmo = [];
 
-let removed = [];
+let removed = {};
 let playerammolist = {};
 
 const ammoBoxOwner = [{
@@ -173,11 +173,16 @@ class LimitedAmmo {
 			
 			if(weapon.weapon == "None" || notguns.includes(weapon.weapon)) {
 				if(toreturn) {
-					const weprem = removed.filter(x => x.pl === player.name);
-					for(var wr in weprem) {
-						const wep = weprem[wr].wep;
-						removed.splice(removed.indexOf(wep), 1);
-						player.giveItem(wep);
+					if(player.name in removed) {
+						
+						const wepArray = removed[player.name];
+						for(let i in wepArray) {
+							
+							player.giveItem(wepArray[i]);
+							
+						}
+						removed[player.name] = [];
+						
 					}
 				}
 				continue;
@@ -225,7 +230,8 @@ class LimitedAmmo {
 				const wep = 'Weapon_' + weapon.weapon.toLowerCase();
 				player.takeItem(wep);
 				if(toreturn) {
-					removed.push({pl: player.name, wep: wep});
+					if(!(player.name in removed)) { removed[player.name] = []; }
+					removed[player.name].push(wep);
 				}
 				continue;
 			}
@@ -242,7 +248,12 @@ class LimitedAmmo {
 				this.omegga.middlePrint(player.name, inv[ammot]);
 				if(inv[ammot] <= 0) {
 					this.omegga.whisper(player.name, pclr.msg + 'You ran out of ' + ammotypes[ammot] + '.</>');
-					player.takeItem('Weapon_' + weapon.weapon.toLowerCase());
+					const wep = 'Weapon_' + weapon.weapon.toLowerCase();
+					player.takeItem(wep);
+					if(toreturn) {
+						if(!(player.name in removed)) { removed[player.name] = []; }
+						removed[player.name].push(wep);
+					}
 					continue;
 				}
 			}
@@ -418,13 +429,13 @@ class LimitedAmmo {
 				const coolDown = Number(data[3]);
 				
 				if(isNaN(coolDown)) {
-					result.omegga.broadcast(result.pclr.err + 'Ammo spawner at [' + ammoSpawnPos + '] contains invalid cooldown paramteres.<>');
+					result.omegga.broadcast(result.pclr.err + 'Ammo spawner at [' + ammoSpawnPos + '] contains invalid cooldown parameters.<>');
 					continue;
 				}
 				
 				const minMax = [Number(data[1]), Number(data[2])];
 				if(isNaN(minMax[0]) || isNaN(minMax[1]) || minMax[0] > minMax[1] || minMax[0] < 0 || minMax[1] > ammoBoxData.length - 1) {
-					result.omegga.broadcast(result.pclr.err + 'Ammo spawner at [' + ammoSpawnPos + '] contains invalid min-max paramteres.<>');
+					result.omegga.broadcast(result.pclr.err + 'Ammo spawner at [' + ammoSpawnPos + '] contains invalid min-max parameters.<>');
 					continue;
 				}
 				
