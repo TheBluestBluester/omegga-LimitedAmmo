@@ -15,9 +15,14 @@
     },
     "AmountLostOnDeath": {
       "description": "How much of ammo the player loses upon death. Requires death events to work. 0% - 100%",
-      "default": 1.0,
+      "default": 100,
       "type": "number"
     },
+	"AmountDropped": {
+	  "description": "How much of ammo is dropped as an ammo box. This config depends on the AmountLostOnDeath. 0% - 100%",
+	  "default": 0,
+	  "type": "number"
+	},
 	"StarterAmmo": {
       "description": "How much of ammo is given when respawning or joining. Number of values depends on the ammo setup.",
       "default": ["20", "0", "0", "0", "0"],

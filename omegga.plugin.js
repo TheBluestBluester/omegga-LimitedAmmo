@@ -18,8 +18,10 @@ let towipeleave;
 let authorized;
 let saveAmmo;
 let starterAmmo;
+let dropPerc;
 
 let ammoBoxData = [];
+let playerAmmoBox = {};
 
 let defaultAmmo = [];
 
@@ -73,7 +75,8 @@ class LimitedAmmo {
 		toreturn = this.config.ReturnWeapon;
 		authorized = this.config.Authorized;
 		saveAmmo = this.config.SaveAmmoOnLeave;
-		starterAmmo = this.config.StarterAmmo
+		starterAmmo = this.config.StarterAmmo;
+		dropPerc = this.config.AmountDropped;
 	}
 	
 	async getHeldWeapon(pawn) {
@@ -299,11 +302,21 @@ class LimitedAmmo {
 				}
 				
 				interactBrick.components.BCD_Interact.Message = '';
-				interactBrick.components.BCD_Interact.ConsoleTag;
+				interactBrick.components.BCD_Interact.ConsoleTag = '';
 				brsSave.bricks[brickInd] = interactBrick;
 				brsSave.brick_owners = ammoBoxOwner;
 				
 				ammoBoxData.push({ammoType: "ALL", amounts: amounts, random: randomPerc, center: bounds.center, extent: extent, order: order, brs: brsSave, interInd: brickInd});
+				
+			}
+			else if(interactBrick.components.BCD_Interact.Message == "PLAYERDROP") {
+				
+				interactBrick.components.BCD_Interact.Message = '';
+				interactBrick.components.BCD_Interact.ConsoleTag = '';
+				brsSave.bricks[brickInd] = interactBrick;
+				brsSave.brick_owners = ammoBoxOwner;
+				
+				playerAmmoBox = {brs: brsSave, interInd: brickInd, center: bounds.center, extent: extent};
 				
 			}
 			else {
@@ -324,7 +337,7 @@ class LimitedAmmo {
 				const order = Number(data[1]);
 				
 				interactBrick.components.BCD_Interact.Message = '';
-				interactBrick.components.BCD_Interact.ConsoleTag;
+				interactBrick.components.BCD_Interact.ConsoleTag = '';
 				brsSave.bricks[brickInd] = interactBrick;
 				brsSave.brick_owners = ammoBoxOwner;
 				
@@ -365,7 +378,7 @@ class LimitedAmmo {
 	
 	async createBox(pos, min, max) {
 		
-		const id = Math.floor(Math.random() * 10000);
+		const id = Math.floor(Math.random() * 100000);
 		
 		let ammoBoxList = this.copyArray(ammoBoxData);
 		ammoBoxList = (ammoBoxList.sort((a, b) => a.order - b.order)).splice(min, max - min + 1);
@@ -556,7 +569,9 @@ class LimitedAmmo {
 			}
 			
 			const ammoSpawnerInd = ammoSpawners.findIndex(as => as.boxIndex == splitNum[2]);
-			ammoSpawners[ammoSpawnerInd].boxIndex = null;
+			if(ammoSpawnerInd > -1) {
+				ammoSpawners[ammoSpawnerInd].boxIndex = null;
+			}
 			
 			
 		})
@@ -707,13 +722,34 @@ class LimitedAmmo {
 			}
 			const player = args[0].player;
 			let inv = playerammolist[player.id];
+			
+			const loss = (1 - loseamount / 100);
+			const drop = (1 - loss) * (dropPerc / 100);
+			let dropAmounts = [];
+			
 			for(var i in inv) {
 				let ammo = inv[i];
-				ammo = Math.floor(ammo * (1 - loseamount / 100));
+				dropAmounts.push(ammo * drop);
+				ammo = Math.floor(ammo * loss);
 				inv[i] = ammo;
 			}
 			playerammolist[player.id] = inv;
 			this.omegga.whisper(player.name, pclr.msg + 'You have lost some ammo!</>');
+			
+			if(drop > 0) {
+				
+				let playerPos = await (this.omegga.getPlayer(player.name)).getPosition();
+				playerPos = vec.floor(playerPos);
+				
+				const interactBrick = playerAmmoBox.brs.bricks[playerAmmoBox.interInd];
+				const trueCenter = vec.add(playerAmmoBox.center, playerPos);
+				playerAmmoBox.brs.bricks[playerAmmoBox.interInd] = interactBrick;
+				interactBrick.components.BCD_Interact.ConsoleTag = "ammoBox ALL " + dropAmounts.join(',') + ' ' + trueCenter.join(' ') + ' ' + playerAmmoBox.extent.join(' ') + ' -1';
+				
+				this.omegga.loadSaveData(playerAmmoBox.brs, {quiet: true, offX: playerPos[0], offY: playerPos[1], offZ: playerPos[2]});
+				
+			}
+			
 			dead.push(player.name);
 		}
 		if(ev === 'spawn' && loseamount > 0 && loseamount <= 1) {
