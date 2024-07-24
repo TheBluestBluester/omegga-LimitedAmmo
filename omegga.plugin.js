@@ -408,9 +408,9 @@ class LimitedAmmo {
 		
 	}
 	
-	async reCacheAmmoSpawns(result) {
+	async reCacheAmmoSpawns() {
 		
-		if(!result) { return; }
+		//if(!result) { return; }
 		
 		console.log("Recaching ammo spawns...");
 		
@@ -418,7 +418,8 @@ class LimitedAmmo {
 		
 		ammoSpawners = [];
 		
-		const brs = await result.omegga.getSaveData();
+		const brs = await this.omegga.getSaveData();
+		//console.log(brs);
 		if (brs == null) { return; }
 		
 		let bricks = brs.bricks.filter(b => 'BCD_Interact' in b.components);
@@ -442,13 +443,13 @@ class LimitedAmmo {
 				const coolDown = Number(data[3]);
 				
 				if(isNaN(coolDown)) {
-					result.omegga.broadcast(result.pclr.err + 'Ammo spawner at [' + ammoSpawnPos + '] contains invalid cooldown parameters.<>');
+					this.omegga.broadcast(pclr.err + 'Ammo spawner at [' + ammoSpawnPos + '] contains invalid cooldown parameters.<>');
 					continue;
 				}
 				
 				const minMax = [Number(data[1]), Number(data[2])];
 				if(isNaN(minMax[0]) || isNaN(minMax[1]) || minMax[0] > minMax[1] || minMax[0] < 0 || minMax[1] > ammoBoxData.length - 1) {
-					result.omegga.broadcast(result.pclr.err + 'Ammo spawner at [' + ammoSpawnPos + '] contains invalid min-max parameters.<>');
+					this.omegga.broadcast(pclr.err + 'Ammo spawner at [' + ammoSpawnPos + '] contains invalid min-max parameters.<>');
 					continue;
 				}
 				
@@ -458,13 +459,20 @@ class LimitedAmmo {
 			
 		}
 		
-		result.omegga.broadcast(result.pclr.msg + 'Ammo spawns cached!<>');
-		result.omegga.clearBricks('00000000-0000-0000-0000-4000b0800000', {quiet: true});
+		this.omegga.broadcast(pclr.msg + 'Ammo spawns cached!<>');
+		this.omegga.clearBricks('00000000-0000-0000-0000-4000b0800000', {quiet: true});
 		
 	}
 	
-	// Detect uploading to recache all ammo spawns.
-	async setupLoadListener() {
+	async init() {
+		ammoboxfolder = fs.readdirSync(__dirname + "/AmmoBoxes");
+		
+		const l = await amlist.setupAmmo();
+		ammotypes = l[0];
+		gunammotypes = l[1]
+		
+		this.setupBoxes();
+		
 		
 		function pattern(line, omegga) {
 			//try{
@@ -481,27 +489,14 @@ class LimitedAmmo {
 			}
 			last = groups.counter;
 			
-			// For some reason omegga is undefined in functions so this is the work-around i came up with.
-			groups.omegga = omegga;
-			groups.pclr = pclr;
+			//groups.execute = execute;
+			omegga.emit('brsload');
 			
-			return groups;
-			
-			//}catch(e){}
+			//return groups;
 		}
 		
 		this.omegga.addMatcher((line) => pattern(line, this.omegga), this.reCacheAmmoSpawns);
 		
-	}
-	
-	async init() {
-		ammoboxfolder = fs.readdirSync(__dirname + "/AmmoBoxes");
-		
-		const l = await amlist.setupAmmo();
-		ammotypes = l[0];
-		gunammotypes = l[1]
-		
-		this.setupBoxes();
 		
 		for(let i=0;i<ammotypes.length;i++) {
 			
@@ -574,6 +569,9 @@ class LimitedAmmo {
 			}
 			
 			
+		})
+		.on('brsload', async () => {
+			this.reCacheAmmoSpawns();
 		})
 		.on('cmd:recache', async name => {
 			
@@ -709,7 +707,7 @@ class LimitedAmmo {
 			playerammolist[player.id] = inv;
 		}
 		
-		this.reCacheAmmoSpawns({omegga: this.omegga, pclr: pclr}).catch((e) => {console.log(e)});
+		this.reCacheAmmoSpawns().catch((e) => {console.log(e)});
 		
 		return { registeredCommands: ['giveammo', 'reset', 'listammo', 'wipeammo', 'recache'] };
 	}
