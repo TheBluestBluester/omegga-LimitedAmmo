@@ -752,11 +752,15 @@ class LimitedAmmo {
 			
 			dead.push(player.name);
 		}
-		if(ev === 'spawn' && loseamount > 0 && loseamount <= 1) {
+		if(ev === 'spawn' && loseamount > 0 && loseamount <= 100) {
 			if(args[0] == null) {
 				return;
 			}
 			const player = args[0].player;
+			if(loseamount >= 100) {
+				playerammolist[player.id] = this.copyArray(defaultAmmo);
+			}
+			console.log(playerammolist, loseamount);
 			dead.splice(dead.indexOf(player.name),1);
 		}
 		if(ev === 'setammo' || ev === 'changeammo') {
