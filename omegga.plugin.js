@@ -22,6 +22,7 @@ let dropPerc;
 
 let ammoBoxData = [];
 let playerAmmoBox = {};
+let playerPawnList = {};
 
 let defaultAmmo = [];
 
@@ -69,6 +70,9 @@ class LimitedAmmo {
 		this.store = store
 		password = this.config.Password;
 		updatedelay = this.config.UpdateDelay;
+		if(updatedelay < 120) {
+			updatedelay = 120;
+		}
 		loseamount = this.config.AmountLostOnDeath;
 		totax = this.config.TaxInfiniteWeapons;
 		todelete = this.config.BanInfiniteWeapons;
@@ -79,26 +83,28 @@ class LimitedAmmo {
 		dropPerc = this.config.AmountDropped;
 	}
 	
-	async getHeldWeapon(pawn) {
+	async getHeldWeapons() {
 		const reg = new RegExp(
-		`BP_FigureV2_C .+?PersistentLevel\.${pawn}\.WeaponSimState = .CurrentItemInstance=(.+?PersistentLevel\.(Weapon|BP_Item)_(?<Weapon>.+?)_C_(?<ID>\\d*)|(?<isNone>None))`
+		`BP_FigureV2_C .+?PersistentLevel\.(?<Pawn>.+?)\.WeaponSimState = .CurrentItemInstance=(.+?PersistentLevel\.(Weapon|BP_Item)_(?<Weapon>.+?)_C_(?<ID>\\d*)|(?<isNone>None))`
 		);
-		const [{groups: { Weapon, ID, isNone }}] = await this.omegga.addWatcher(reg, {
+		const data = await this.omegga.addWatcher(reg, {
 			exec: () =>
 			this.omegga.writeln(
-				`getAll BP_FigureV2_C WeaponSimState Name=${pawn}`
+				`getAll BP_FigureV2_C WeaponSimState`
 			),
 			first: 'index',
-			timeoutDelay: 500
+			timeoutDelay: 100,
+			bundle: true
 		}).catch();
 		
-		if(isNone) {
-			
-			return {weapon: 'None', id: null};
+		let dataArray = [];
+		for(let i in data) {
+			const chunk = data[i];
+			dataArray.push({pawn: chunk[1], weapon: chunk[4], id: chunk[5]});
 		}
-		else {
-			return {weapon: Weapon, id: ID};
-		}
+		
+		return dataArray;
+		
 	}
 	
 	async getWeaponAmmo(Weapon, id) {
@@ -149,14 +155,25 @@ class LimitedAmmo {
 	async tick() {
 		try {
 		
+		function returnKeyAndValue(object, value) {
+			const key = Object.entries(object).find(o => o[1] == value);
+			if(key == null) { return [false, false]; }
+			return [key[0], value];
+		}
+		
 		const players = this.omegga.players;
-		for(var pi in players) {
-			const player = players[pi];
-			const ppawn = await player.getPawn().catch();
-			const weapon = await this.getHeldWeapon(ppawn);
-			//console.log(weapon.weapon);
+		const gunStates = await this.getHeldWeapons();
+		
+		for(var gs in gunStates) {
+			
+			const weapon = gunStates[gs];
+			const [pl, ppawn] = returnKeyAndValue(playerPawnList, weapon.pawn);
+			if(pl == false) { continue; }
+			
+			const player = players.find(p => p.id == pl);
+			if(player == null) { continue; }
 			let pa = playerammo[player.id];
-			//console.log(pa);
+			
 			if(pa == null) {
 				playerammo[player.id] = {grnt: '', grenade: false, ammo: 0, selected: null};
 				continue;
@@ -509,15 +526,14 @@ class LimitedAmmo {
 			
 		}
 		
-		if(loseamount > 0) {
-			const deathevents = await this.omegga.getPlugin('deathevents');
-			if(deathevents) {
-				console.log('Deathevents detected.');
-				deathevents.emitPlugin('subscribe');
-			}
-			else {
-				console.error('Ammo loss on death requires deathevents! Players will NOT lose ammo on death.');
-			}
+		const deathevents = await this.omegga.getPlugin('deathevents');
+		if(deathevents) {
+			console.log('Deathevents detected.');
+			deathevents.emitPlugin('subscribe');
+		}
+		else {
+			console.log('This plugin requires deathevents.');
+			return;
 		}
 		
 		this.omegga.on('interact', async data => {
@@ -674,6 +690,10 @@ class LimitedAmmo {
 				
 			}
 			
+			const pl = await this.omegga.getPlayer(player.id);
+			const pawn = await pl.getPawn();
+			playerPawnList[player.id] = pawn;
+			
 			playerammolist[player.id] = inv;
 		})
 		.on('leave', async player => {
@@ -692,7 +712,7 @@ class LimitedAmmo {
 		const players =  this.omegga.players;
 		const keys = await this.store.keys();
 		for(var pi in players) {
-			const player = players[pi];
+			const player = await this.omegga.getPlayer(players[pi].id);
 			let inv = this.copyArray(defaultAmmo);
 			
 			if(saveAmmo) {
@@ -703,6 +723,9 @@ class LimitedAmmo {
 					inv = await this.store.get(player.id);
 				}
 			}
+			
+			const pawn = await player.getPawn();
+			playerPawnList[player.id] = pawn;
 			
 			playerammolist[player.id] = inv;
 		}
@@ -750,7 +773,7 @@ class LimitedAmmo {
 			
 			dead.push(player.name);
 		}
-		if(ev === 'spawn' && loseamount > 0 && loseamount <= 100) {
+		if(ev === 'spawn') {
 			if(args[0] == null) {
 				return;
 			}
@@ -758,8 +781,16 @@ class LimitedAmmo {
 			if(loseamount >= 100) {
 				playerammolist[player.id] = this.copyArray(defaultAmmo);
 			}
-			console.log(playerammolist, loseamount);
-			dead.splice(dead.indexOf(player.name),1);
+			//console.log(playerammolist, loseamount);
+			const ind = dead.indexOf(player.name)
+			if(ind > -1) {
+				dead.splice(ind,1);
+			}
+			
+			const pl = await this.omegga.getPlayer(player.name);
+			const pawn = await pl.getPawn();
+			playerPawnList[player.id] = pawn;
+			
 		}
 		if(ev === 'setammo' || ev === 'changeammo') {
 			const pla = args[0];
