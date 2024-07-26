@@ -864,6 +864,8 @@ class LimitedAmmo {
 		clearInterval(interval);
 		clearInterval(ammoSpawnInterval);
 		
+		this.omegga.clearBricks('00000000-0000-0000-0000-4000b0800000', {quiet: true});
+		
 		if(!saveAmmo) { return; }
 		const players = this.omegga.players;
 		for(var pi in players) {
