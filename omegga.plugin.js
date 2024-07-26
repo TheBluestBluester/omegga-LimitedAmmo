@@ -100,7 +100,9 @@ class LimitedAmmo {
 		let dataArray = [];
 		for(let i in data) {
 			const chunk = data[i];
-			dataArray.push({pawn: chunk[1], weapon: chunk[4], id: chunk[5]});
+			let weapon = chunk[4];
+			if(chunk[5] == 'None') { weapon = "None"; }
+			dataArray.push({pawn: chunk[1], weapon: weapon, id: chunk[5]});
 		}
 		
 		return dataArray;
@@ -167,6 +169,7 @@ class LimitedAmmo {
 		for(var gs in gunStates) {
 			
 			const weapon = gunStates[gs];
+			//console.log(weapon);
 			const [pl, ppawn] = returnKeyAndValue(playerPawnList, weapon.pawn);
 			if(pl == false) { continue; }
 			
@@ -231,6 +234,19 @@ class LimitedAmmo {
 				pa.grenade = false;
 				pa.ammo = ammo;
 				playerammo[player.id] = pa;
+				if(toreturn) {
+					if(player.name in removed) {
+						
+						const wepArray = removed[player.name];
+						for(let i in wepArray) {
+							
+							player.giveItem(wepArray[i]);
+							
+						}
+						removed[player.name] = [];
+						
+					}
+				}
 				this.omegga.middlePrint(player.name, inv[ammot]);
 				continue;
 			}
