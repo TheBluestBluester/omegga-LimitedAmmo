@@ -44,6 +44,11 @@
 	"default": true,
 	"type": "boolean"
     },
+	"ReturnWhenHasAmmo": {
+	"description": "Returns the weapon only after getting the ammo for it.",
+	"default": true,
+	"type": "boolean"
+    },
 	 "SaveAmmoOnLeave": {
 	"description": "To save ammo when the player leaves.",
 	"default": false,

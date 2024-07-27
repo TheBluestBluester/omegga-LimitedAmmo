@@ -19,6 +19,7 @@ let authorized;
 let saveAmmo;
 let starterAmmo;
 let dropPerc;
+let returnOnAmmo;
 
 let ammoBoxData = [];
 let playerAmmoBox = {};
@@ -81,6 +82,7 @@ class LimitedAmmo {
 		saveAmmo = this.config.SaveAmmoOnLeave;
 		starterAmmo = this.config.StarterAmmo;
 		dropPerc = this.config.AmountDropped;
+		returnOnAmmo = this.config.ReturnWhenHasAmmo;
 	}
 	
 	async getHeldWeapons() {
@@ -195,7 +197,7 @@ class LimitedAmmo {
 			}
 			
 			if(weapon.weapon == "None" || notguns.includes(weapon.weapon)) {
-				if(toreturn) {
+				if(toreturn && !returnOnAmmo) {
 					if(player.name in removed) {
 						
 						const wepArray = removed[player.name];
@@ -234,7 +236,7 @@ class LimitedAmmo {
 				pa.grenade = false;
 				pa.ammo = ammo;
 				playerammo[player.id] = pa;
-				if(toreturn) {
+				if(toreturn && !returnOnAmmo) {
 					if(player.name in removed) {
 						
 						const wepArray = removed[player.name];
@@ -553,7 +555,7 @@ class LimitedAmmo {
 		}
 		
 		this.omegga.on('interact', async data => {
-			
+			try{
 			const split = data.message.split(' ');
 			
 			if(split[0] != 'ammoBox') { return; }
@@ -595,11 +597,39 @@ class LimitedAmmo {
 				this.omegga.middlePrint(data.player.name, '+' + splitNum[1] + ' ' + ammotypes[splitNum[0]]);
 			}
 			
+			if(toreturn && returnOnAmmo) {
+				if(data.player.name in removed) {
+					
+					const playerAmmo = playerammolist[data.player.id];
+					const pl = await this.omegga.getPlayer(data.player.name); // Fix dis shit already.
+					
+					const wepArray = removed[data.player.name];
+					let toKeep = [];
+					for(let i in wepArray) {
+						
+						const spl = wepArray[i].replace('Weapon_', '');
+						const ammoType = gunammotypes[spl];
+						//console.log(playerAmmo);
+						if(playerAmmo[ammoType] <= 0) { toKeep.push(wepArray[i]); continue; }
+						pl.giveItem(wepArray[i]);
+						
+					}
+					
+					if(toKeep.length > 0) {
+						removed[data.player.name] = toKeep;
+					}
+					else {
+						removed[data.player.name] = [];
+					}
+					
+				}
+			}
+			
 			const ammoSpawnerInd = ammoSpawners.findIndex(as => as.boxIndex == splitNum[2]);
 			if(ammoSpawnerInd > -1) {
 				ammoSpawners[ammoSpawnerInd].boxIndex = null;
 			}
-			
+			}catch(e){console.log(e)}
 			
 		})
 		.on('brsload', async () => {
@@ -662,6 +692,35 @@ class LimitedAmmo {
 			this.omegga.middlePrint(reciever.name, '+' + amount + ' ' + ammotypes[slot] + ' from ' + name);
 			playerammolist[sender.id] = sinv;
 			playerammolist[reciever.id] = rinv;
+			
+			if(toreturn && returnOnAmmo) {
+				if(reciever.name in removed) {
+					
+					//const playerAmmo = playerammolist[reciever.id];
+					//const pl = await this.omegga.getPlayer(reciever.name); // Fix dis shit already.
+					
+					const wepArray = removed[reciever.name];
+					let toKeep = [];
+					for(let i in wepArray) {
+						
+						const spl = wepArray[i].replace('Weapon_', '');
+						const ammoType = gunammotypes[spl];
+						//console.log(playerAmmo);
+						if(rinv[ammoType] <= 0) { toKeep.push(wepArray[i]); continue; }
+						reciever.giveItem(wepArray[i]);
+						
+					}
+					
+					if(toKeep.length > 0) {
+						removed[reciever.name] = toKeep;
+					}
+					else {
+						removed[reciever.name] = [];
+					}
+					
+				}
+			}
+			
 		})
 		.on('cmd:listammo', async name => {
 			const player = await this.omegga.getPlayer(name);
@@ -802,6 +861,8 @@ class LimitedAmmo {
 			if(ind > -1) {
 				dead.splice(ind,1);
 			}
+			
+			removed[player.name] = [];
 			
 			const pl = await this.omegga.getPlayer(player.name);
 			const pawn = await pl.getPawn();
