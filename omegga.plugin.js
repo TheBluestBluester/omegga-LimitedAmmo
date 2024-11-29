@@ -562,6 +562,7 @@ class LimitedAmmo {
 			
 			//console.log(data.message);
 			const brs = await this.omegga.getSaveData({center: data.position, extent: data.brick_size});
+			if(brs == null) { return; }
 			const owner = brs.brick_owners[brs.bricks[0].owner_index - 1];
 			if(owner.name != ammoBoxOwner[0].name) {
 				this.omegga.whisper(data.player.name, pclr.err + 'This box was created by a player.<>');
@@ -825,7 +826,7 @@ class LimitedAmmo {
 			
 			for(var i in inv) {
 				let ammo = inv[i];
-				dropAmounts.push(ammo * drop);
+				dropAmounts.push(Math.floor(ammo * drop));
 				ammo = Math.floor(ammo * loss);
 				inv[i] = ammo;
 			}
